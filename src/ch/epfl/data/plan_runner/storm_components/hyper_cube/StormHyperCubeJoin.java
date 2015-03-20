@@ -40,6 +40,8 @@ public class StormHyperCubeJoin extends StormBoltComponent {
                                          List<String> tuple, long lineageTimestamp, boolean isLastInBatch) {
     }
 
+
+    /*************** Should be finished *****************/
     private void createIndexes() {
 
     }
@@ -82,6 +84,7 @@ public class StormHyperCubeJoin extends StormBoltComponent {
         return null;
     }
 
+    /*************** Should be finished *****************/
     private void join(Tuple stormTuple, List<String> tuple,
                       boolean isFromFirstEmitter, TupleStorage oppositeStorage,
                       boolean isLastInBatch) {
@@ -103,18 +106,21 @@ public class StormHyperCubeJoin extends StormBoltComponent {
 
     }
 
+    /*************** Should be finished *****************/
     private void processNonLastTuple(String inputComponentIndex,
                                      String inputTupleString, //
                                      List<String> tuple, // these two are the same
                                      String inputTupleHash, Tuple stormTupleRcv, boolean isLastInBatch) {
     }
 
+    /*************** Should be finished *****************/
     private void selectTupleToJoin(TupleStorage oppositeStorage,
                                    List<Index> oppositeIndexes, boolean isFromFirstEmitter,
                                    List<String> valuesToApplyOnIndex, TupleStorage tuplesToJoin) {
 
     }
 
+    /*************** Should be finished *****************/
     private List<String> updateIndexes(String inputComponentIndex,
                                        List<String> tuple, List<Index> affectedIndexes, int row_id) {
         return null;
