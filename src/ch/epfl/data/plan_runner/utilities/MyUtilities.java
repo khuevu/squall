@@ -937,6 +937,24 @@ public class MyUtilities {
 	return new ArrayList<String>(Arrays.asList(columnValues));
     }
 
+
+
+    /*************** Should be finished *****************/
+    public static InputDeclarer hyperCubeAttachEmitterComponents(
+            InputDeclarer currentBolt, List<StormEmitter> emitters, List<String> allCompNames,
+            MatrixAssignment assignment, Map map, TypeConversion wrapper) {
+
+        return null;
+    }
+
+    /*************** Should be finished *****************/
+    public static InputDeclarer hypecCubeAttachEmitterComponentsWithInterChanging(
+            InputDeclarer currentBolt, List<StormEmitter> emitters, List<String> allCompNames,
+            MatrixAssignment assignment, Map map, InterchangingComponent inter) {
+
+        return null;
+    }
+
     public static InputDeclarer thetaAttachEmitterComponents(
 	    InputDeclarer currentBolt, StormEmitter emitter1,
 	    StormEmitter emitter2, List<String> allCompNames,
