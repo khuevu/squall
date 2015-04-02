@@ -118,7 +118,7 @@ if [ -r "$BIN_DIR/../src/leiningen/core.clj" ]; then
     fi
 else
     # Not running from a checkout
-    CLASSPATH="$CLASSPATH:$LEIN_JAR"
+    CLASSPATH="$LEIN_JAR:$CLASSPATH"
 
     if [ ! -r "$LEIN_JAR" -a "$1" != "self-install" ]; then
         "$0" self-install
@@ -269,6 +269,9 @@ else
 
     ## TODO: -XX:+UseCompressedOops only works on 64 bit jvm
     # is there some way of detecting 64bit at this stage? - tavisrudd
+    CMD="$RLWRAP $LEIN_JAVA_CMD -Xbootclasspath/a:\"$CLOJURE_JAR\" -client $LEIN_JVM_OPTS -Dleiningen.original.pwd=\"$ORIGINAL_PWD\" -Dleiningen.trampoline-file=$TRAMPOLINE_FILE -cp \"$CLASSPATH\" $JLINE clojure.main -e \"(use 'leiningen.core)(-main)\""
+    echo $CMD
+
     $RLWRAP $LEIN_JAVA_CMD \
         -Xbootclasspath/a:"$CLOJURE_JAR" \
         -client $LEIN_JVM_OPTS \

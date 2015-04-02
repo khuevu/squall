@@ -13,6 +13,10 @@ experiments
 test/squall_plan_runner/confs/special_purpose
 contrib/0.2.5
 resources/storm-linux_*
+.idea/
+*.iml
+tmp
+*.swp
 
 test/data/tpch/small
 test/data/tpch/0.1G

@@ -1,6 +1,6 @@
 (defproject squall "0.2.0"
   :java-source-path "../src"
-  :javac-options {:debug "false" :fork "true" :target "1.7" :source "1.7"}
+  :javac-options {:debug "true" :fork "true" :target "1.7" :source "1.7"}
   :aot :all
   :jvm-opts ["-Xmx1024m" "-Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib"]
 
@@ -14,7 +14,7 @@
 
 		     ; [org.clojure/clojure "1.4.0"]
 		     [org.clojure/clojure "1.5.1"]
-           [org.apache.storm/storm-core "0.9.2-incubating"]
+           [org.apache.storm/storm-core "0.9.3"]
 
 
 					  ; for Apache Storm 0.9.2
@@ -50,4 +50,19 @@
                  ; [com.googlecode.disruptor/disruptor "2.10.1"]
                  ; [storm/jgrapht "0.8.3"]
                  ; [com.google.guava/guava "13.0"]
-                    ])
+
+           [akka "2.2.3"]
+           [cal10 "0.7.4"]
+           [config "1.0.2"]
+           [lms "0.3"]
+           [scala-compiler "2.10.2-RC1"]
+           [scala-library "2.10.2-RC2"]
+           [scala-reflect "2.10.2-RC1"]
+           [scalariform "0.1.4"]
+           [uncommons-maths "1.2.2a"]
+           [custorders "0.0.1"]
+           [dbtoaster "0.0.1"]
+                    ]
+
+
+                    )
