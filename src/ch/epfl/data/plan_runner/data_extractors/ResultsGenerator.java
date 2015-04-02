@@ -20,7 +20,8 @@ import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 
-import com.google.common.io.Files;
+//import com.google.common.io.Files;
+import org.apache.storm.guava.io.Files;
 
 /**
  * 

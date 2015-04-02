@@ -4,23 +4,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import ch.epfl.data.plan_runner.query_plans.*;
 import org.apache.log4j.Logger;
 
 import backtype.storm.Config;
 import backtype.storm.topology.TopologyBuilder;
 import ch.epfl.data.plan_runner.components.Component;
 import ch.epfl.data.plan_runner.ewh.components.DummyComponent;
-import ch.epfl.data.plan_runner.query_plans.HyracksPlan;
-import ch.epfl.data.plan_runner.query_plans.HyracksPreAggPlan;
-import ch.epfl.data.plan_runner.query_plans.QueryBuilder;
-import ch.epfl.data.plan_runner.query_plans.RSTPlan;
-import ch.epfl.data.plan_runner.query_plans.TPCH10Plan;
-import ch.epfl.data.plan_runner.query_plans.TPCH3Plan;
-import ch.epfl.data.plan_runner.query_plans.TPCH4Plan;
-import ch.epfl.data.plan_runner.query_plans.TPCH5Plan;
-import ch.epfl.data.plan_runner.query_plans.TPCH7Plan;
-import ch.epfl.data.plan_runner.query_plans.TPCH8Plan;
-import ch.epfl.data.plan_runner.query_plans.TPCH9Plan;
 import ch.epfl.data.plan_runner.query_plans.debug.HyracksL1Plan;
 import ch.epfl.data.plan_runner.query_plans.debug.HyracksL3BatchPlan;
 import ch.epfl.data.plan_runner.query_plans.debug.HyracksL3Plan;
@@ -384,7 +374,10 @@ public class Main {
 	} else if (queryName.equalsIgnoreCase("theta_ewh_orders_scale")) {
 	    queryPlan = new ThetaEWHOrdersScaleJoin(dataPath, extension, conf)
 		    .getQueryPlan();
-	}
+	} else if (queryName.equalsIgnoreCase("dummy")) {
+        System.out.println("DUMMY query plan");
+        queryPlan = new HyracksDummyPlan(conf).getQueryBuilder();
+    }
 
 	// ... this line
 
