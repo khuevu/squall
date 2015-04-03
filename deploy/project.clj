@@ -4,13 +4,27 @@
   :aot :all
   :jvm-opts ["-Xmx1024m" "-Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib"]
 
+  :dependencies [
+        [ujmp "0.2.5"]
+        [jsqlparser "0.7.0"]
+        [trove "3.0.2"]
+        [bheaven "0.0.3"]
+        [opencsv "2.3"]
+        [bdb-je "5.0.84"]
+        [akka "2.2.3"]
+        [cal10 "0.7.4"]
+        [config "1.0.2"]
+        [lms "0.3"]
+        [scala-compiler "2.10.2-RC1"]
+        [scala-library "2.10.2-RC2"]
+        [scala-reflect "2.10.2-RC1"]
+        [scalariform "0.1.4"]
+        [uncommons-maths "1.2.2a"]
+        [dbtoasterquery "0.0.1"]
+        [dbtoaster "0.0.1"]
+                  ]
   :dev-dependencies [
-           [ujmp "0.2.5"]
-		     [jsqlparser "0.7.0"]
-		     [trove "3.0.2"]
-		     [bheaven "0.0.3"]
-		     [opencsv "2.3"]
-		     [bdb-je "5.0.84"]
+
 
 		     ; [org.clojure/clojure "1.4.0"]
 		     [org.clojure/clojure "1.5.1"]
@@ -51,17 +65,7 @@
                  ; [storm/jgrapht "0.8.3"]
                  ; [com.google.guava/guava "13.0"]
 
-           [akka "2.2.3"]
-           [cal10 "0.7.4"]
-           [config "1.0.2"]
-           [lms "0.3"]
-           [scala-compiler "2.10.2-RC1"]
-           [scala-library "2.10.2-RC2"]
-           [scala-reflect "2.10.2-RC1"]
-           [scalariform "0.1.4"]
-           [uncommons-maths "1.2.2a"]
-           [custorders "0.0.1"]
-           [dbtoaster "0.0.1"]
+
                     ]
 
 

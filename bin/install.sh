@@ -16,18 +16,17 @@ cp ../contrib/leiningen-1.7.1-standalone.jar $HOME/.lein/self-installs/
 ./lein localrepo install ../contrib/dbtoaster/lms_2.10-0.3-SNAPSHOT.jar lms 0.3
 ./lein localrepo install ../contrib/dbtoaster/scala-compiler-2.10.2-RC1.jar scala-compiler 2.10.2-RC1
 ./lein localrepo install ../contrib/dbtoaster/scala-library-2.10.2-RC2.jar scala-library 2.10.2-RC2
-#./lein localrepo install ../contrib/dbtoaster/scala-library-2.10.2.jar scala-library 2.10.2
 ./lein localrepo install ../contrib/dbtoaster/scala-reflect-2.10.2-RC1.jar scala-reflect 2.10.2-RC1
 ./lein localrepo install ../contrib/dbtoaster/scalariform_2.10-0.1.4.jar scalariform 0.1.4
 ./lein localrepo install ../contrib/dbtoaster/uncommons-maths-1.2.2a.jar uncommons-maths 1.2.2a
 
 #tmp
-./lein localrepo install ../contrib/tmp/modifiedcustorders.jar custorders 0.0.1
-./lein localrepo install ../contrib/dbtoaster/dbtoaster.jar dbtoaster 0.0.1
+./lein localrepo install /Users/khuevu/Projects/DDBToaster/tmp/query.jar dbtoasterquery 0.0.1
+./lein localrepo install /Users/khuevu/Projects/DDBToaster/tmp/dbtoaster.jar dbtoaster 0.0.1
 
 #copy appropriate version of storm.yaml on local machine
-mkdir -p ~/.storm
-cp ../resources/storm.yaml ~/.storm/storm.yaml
-./adjust_storm_yaml_locally.sh
+#mkdir -p ~/.storm
+#cp ../resources/storm.yaml ~/.storm/storm.yaml
+#./adjust_storm_yaml_locally.sh
 
-mkdir -p /tmp/ramdisk
+#mkdir -p /tmp/ramdisk
