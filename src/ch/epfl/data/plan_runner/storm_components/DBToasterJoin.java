@@ -1,6 +1,8 @@
 package ch.epfl.data.plan_runner.storm_components;
 
 import backtype.storm.Config;
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.InputDeclarer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Tuple;
@@ -10,9 +12,7 @@ import ch.epfl.data.plan_runner.operators.AggregateOperator;
 import ch.epfl.data.plan_runner.operators.ChainOperator;
 import ch.epfl.data.plan_runner.operators.Operator;
 import ch.epfl.data.plan_runner.operators.ProjectOperator;
-import ch.epfl.data.plan_runner.storage.AggregationStorage;
 import ch.epfl.data.plan_runner.storage.BasicStore;
-import ch.epfl.data.plan_runner.storage.KeyValueStore;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
 import ch.epfl.data.plan_runner.utilities.DBToasterApp;
 import ch.epfl.data.plan_runner.utilities.MyUtilities;
@@ -26,13 +26,11 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
-import ddbt.Compiler;
-
 
 public class DBToasterJoin extends StormBoltComponent {
 
     private static final long serialVersionUID = 1L;
-    private static Logger LOG = Logger.getLogger(StormDstJoin.class);
+    private static Logger LOG = Logger.getLogger(DBToasterJoin.class);
 
     //private final ProjectOperator _firstPreAggProj, _secondPreAggProj; // exists
     // only
@@ -59,6 +57,9 @@ public class DBToasterJoin extends StormBoltComponent {
     protected StatisticsUtilities _statsUtils;
 
     private DBToasterApp dbtoasterApp;
+    private static final String DBT_GEN_PKG = "ddbt.gen.";
+    private String _dbToasterQueryName;
+
     private StormEmitter[] _emitters;
     private Map<String, List<ColumnReference>> _indexedColRefs;
 
@@ -82,24 +83,11 @@ public class DBToasterJoin extends StormBoltComponent {
         _operatorChain = cp.getChainOperator();
         _fullHashList = cp.getFullHashList();
 
+        _dbToasterQueryName = cp.getName() + "Impl";
+
         _aggBatchOutputMillis = cp.getBatchOutputMillis();
 
         _statsUtils = new StatisticsUtilities(getConf(), LOG);
-
-        try {
-            //test
-//            String[] a = new String[] {"-xd","/Users/khuevu/Projects/DDBToaster/tmp", "-l", "scala",  "/Users/khuevu/Projects/dbtoaster/modifiedrst.sql","-o", "random.scala", "-c", "random.jar"};
-//            Compiler.main(a);
-//            Class testClass = this.getClass().getClassLoader().loadClass("ddbt.gen.Random");
-//            System.out.println(testClass.getName());
-
-
-
-            Class dbtoasterAppClass = this.getClass().getClassLoader().loadClass("ddbt.gen.QueryImpl");
-            dbtoasterApp = new DBToasterApp(dbtoasterAppClass);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
 
         final int parallelism = SystemParameters.getInt(getConf(), getID()
                 + "_PAR");
@@ -121,6 +109,14 @@ public class DBToasterJoin extends StormBoltComponent {
             currentBolt.allGrouping(killer.getID(),
                     SystemParameters.DUMP_RESULTS_STREAM);
     }
+
+    @Override
+    public void prepare(Map map, TopologyContext tc, OutputCollector collector) {
+        super.prepare(map, tc, collector);
+
+        dbtoasterApp = new DBToasterApp(DBT_GEN_PKG + _dbToasterQueryName);
+    }
+
 
     @Override
     public void aggBatchSend() {

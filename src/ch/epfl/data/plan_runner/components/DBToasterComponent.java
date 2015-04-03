@@ -10,12 +10,9 @@ import ch.epfl.data.plan_runner.operators.ChainOperator;
 import ch.epfl.data.plan_runner.operators.Operator;
 import ch.epfl.data.plan_runner.operators.ProjectOperator;
 import ch.epfl.data.plan_runner.predicates.Predicate;
-import ch.epfl.data.plan_runner.storage.BasicStore;
-import ch.epfl.data.plan_runner.storage.KeyValueStore;
 import ch.epfl.data.plan_runner.storm_components.*;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
 import ch.epfl.data.plan_runner.utilities.MyUtilities;
-import net.sf.jsqlparser.schema.Column;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
 
@@ -171,6 +168,19 @@ public class DBToasterComponent implements Component {
         hash = 37 * hash
                 + (_componentName != null ? _componentName.hashCode() : 0);
         return hash;
+    }
+
+    public String getSQLQuery() {
+        String sql = "CREATE STREAM CUSTOMER(CUSTKEY int, MKTSEGMENT String)\n" +
+                "  FROM FILE '' LINE DELIMITED csv;\n" +
+                "\n" +
+                "CREATE STREAM ORDERS(ORDERKEY int, CUSTKEY int)\n" +
+                "  FROM FILE '' LINE DELIMITED csv;\n" +
+                "\n" +
+                "SELECT CUSTOMER.MKTSEGMENT, COUNT(ORDERS.ORDERKEY)\n" +
+                "FROM CUSTOMER join ORDERS on CUSTOMER.CUSTKEY=ORDERS.CUSTKEY\n" +
+                "GROUP BY CUSTOMER.MKTSEGMENT";
+        return sql;
     }
 
     @Override

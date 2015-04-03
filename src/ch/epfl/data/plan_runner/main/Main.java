@@ -1,10 +1,11 @@
 package ch.epfl.data.plan_runner.main;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
+import ch.epfl.data.plan_runner.components.DBToasterComponent;
 import ch.epfl.data.plan_runner.query_plans.*;
+import ch.epfl.data.plan_runner.utilities.*;
 import org.apache.log4j.Logger;
 
 import backtype.storm.Config;
@@ -57,9 +58,6 @@ import ch.epfl.data.plan_runner.query_plans.theta.ThetaTPCH9Plan;
 import ch.epfl.data.plan_runner.storm_components.StormComponent;
 import ch.epfl.data.plan_runner.storm_components.StormJoin;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
-import ch.epfl.data.plan_runner.utilities.MyUtilities;
-import ch.epfl.data.plan_runner.utilities.StormWrapper;
-import ch.epfl.data.plan_runner.utilities.SystemParameters;
 
 public class Main {
     private static Logger LOG = Logger.getLogger(Main.class);
@@ -144,9 +142,16 @@ public class Main {
 	List<String> allCompNames = qp.getComponentNames();
 	Collections.sort(allCompNames);
 	int planSize = queryPlan.size();
+
+    List<DBToasterComponent> dbToasterComponents = new LinkedList<DBToasterComponent>();
+
 	for (int i = 0; i < planSize; i++) {
 	    Component component = queryPlan.get(i);
-	    Component child = component.getChild();
+	    if (component instanceof DBToasterComponent) {
+            dbToasterComponents.add((DBToasterComponent) component);
+        }
+
+        Component child = component.getChild();
 	    if (child == null) {
 		// a last component (it might be multiple of them)
 		component.makeBolts(builder, killer, allCompNames, conf,
@@ -159,6 +164,36 @@ public class Main {
 			partitioningType, StormComponent.INTERMEDIATE);
 	    }
 	}
+
+    // prepare the jar file for DBToasterComponents
+    if (dbToasterComponents.size() > 0) {
+        LOG.info("There are " + dbToasterComponents.size() + " DBToaster component in query plan");
+
+        String defaultStormJar = System.getProperty("storm.jar");
+
+        for (DBToasterComponent dbtComp : dbToasterComponents) {
+            LOG.info("Generating DBToaster code for " + dbtComp.getName() + " Component");
+            DBToasterCompiler.compile(dbtComp.getSQLQuery(), dbtComp.getName(), "/tmp/squall/");
+            //TODO: don't have to unjar this file at the moment, because the generated classes are not packed in jar
+        }
+
+        // Unjar the defaultStormJar to update
+        try {
+            JarUtilities.extractJarFile(defaultStormJar, "/tmp/squall/");
+        } catch (IOException e) {
+            LOG.error("Fail to extract the jar: " + defaultStormJar, e);
+        }
+
+        String targetJar = "/tmp/squall-standalone-" + (new Date().getTime()) + ".jar";
+        try {
+            JarUtilities.createJar(targetJar, "/tmp/squall/");
+        } catch (IOException e) {
+            LOG.error("Fail to create the updated jar: " + targetJar, e);
+        }
+
+        System.setProperty("storm.jar", targetJar);
+
+    }
 
 	// printing infoID information and returning the result
 	// printInfoID(killer, queryPlan); commented out because IDs are now

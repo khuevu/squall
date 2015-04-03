@@ -1,20 +1,20 @@
 package ch.epfl.data.plan_runner.utilities;
 
 import ddbt.gen.*;
+import org.apache.log4j.Logger;
 import scala.collection.immutable.$colon$colon;
 import scala.collection.immutable.List;
-import scala.collection.immutable.Map;
 import scala.collection.immutable.List$;
 import ddbt.lib.Messages.*;
-import scala.collection.JavaConversions;
-import scala.collection.JavaConversions$;
+import ddbt.lib.IQuery;
+
 
 import java.io.Serializable;
 
-/**
- * Created by khuevu on 3/3/15.
- */
+
 public class DBToasterApp implements Serializable {
+
+    private static Logger LOG = Logger.getLogger(DBToasterApp.class);
 
     public static final byte TUPLE_DELETE = 0x00;
     public static final byte TUPLE_INSERT = 0x01;
@@ -29,17 +29,19 @@ public class DBToasterApp implements Serializable {
         return result;
     }
 
-    private QueryImpl query; // need a generic interface here
+    private IQuery query; // need a generic interface here
 
-    public DBToasterApp(Class dbtoasterAppClass) {
-
-        // Send events
+    public DBToasterApp(String queryClass) {
         try {
-            query = (QueryImpl) dbtoasterAppClass.newInstance();
+            LOG.info("Loading Query class: " + queryClass);
+            Class dbtoasterAppClass = this.getClass().getClassLoader().loadClass(queryClass);
+            query = (IQuery) dbtoasterAppClass.newInstance();
         } catch (InstantiationException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Fail to initialize Query class ", e);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            LOG.error("", e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Class " + queryClass + " not found. ", e);
         }
 
     }
@@ -49,22 +51,13 @@ public class DBToasterApp implements Serializable {
         query.handleEvent(new TupleEvent(TUPLE_INSERT, relationName, result));
     }
 
-//    public java.util.Map<String, Object> getSnapShot() {
-//        List<Map<String, Object>> result = query.getSnapShot();
-//        Map<String, Object> map = result.apply(0);
-//
-//        return JavaConversions.asJavaMap(map);
-//    }
-
     public Object[] getStream() {
         Object[] result = (Object[]) query.handleEvent(new GetStream(1));
         return result;
     }
 
     public void endStream() {
-
         query.handleEvent(EndOfStream$.MODULE$);
-
     }
 
 }
