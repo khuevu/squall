@@ -15,8 +15,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+
 /**
- * Created by khuevu on 7/3/15.
+ * This operator only stores input tuple into an aggregation storage without performing any aggregation.
+ * The aggregation is done by DBToaster code. This serves to be compatible with how Squall LocalMergeResult work.
+ *
+ * @param <T>
  */
 public class DBToasterAggregateOperator<T extends Number & Comparable<T>> implements AggregateOperator<T> {
 

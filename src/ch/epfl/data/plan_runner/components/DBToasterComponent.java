@@ -3,12 +3,13 @@ package ch.epfl.data.plan_runner.components;
 
 import backtype.storm.Config;
 import backtype.storm.topology.TopologyBuilder;
+import ch.epfl.data.plan_runner.conversion.LongConversion;
 import ch.epfl.data.plan_runner.conversion.TypeConversion;
 import ch.epfl.data.plan_runner.expressions.ColumnReference;
 import ch.epfl.data.plan_runner.expressions.ValueExpression;
 import ch.epfl.data.plan_runner.operators.ChainOperator;
 import ch.epfl.data.plan_runner.operators.Operator;
-import ch.epfl.data.plan_runner.operators.ProjectOperator;
+import ch.epfl.data.plan_runner.predicates.ComparisonPredicate;
 import ch.epfl.data.plan_runner.predicates.Predicate;
 import ch.epfl.data.plan_runner.storm_components.*;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
@@ -23,8 +24,7 @@ public class DBToasterComponent implements Component {
     private static final long serialVersionUID = 1L;
     private static Logger LOG = Logger.getLogger(DBToasterComponent.class);
 
-//    private final Component _firstParent;
-//    private final Component _secondParent;
+
     private Component _child;
 
     private final String _componentName;
@@ -38,9 +38,6 @@ public class DBToasterComponent implements Component {
 
     private final ChainOperator _chain = new ChainOperator();
 
-    // preAggregation
-    private ProjectOperator _firstPreAggProj, _secondPreAggProj;
-
     private boolean _printOut;
     private boolean _printOutSet; // whether printOut was already set
 
@@ -48,40 +45,121 @@ public class DBToasterComponent implements Component {
     private Predicate _joinPredicate;
 
     private List<Component> _parents;
-    private Map<Component, List<ColumnReference>> _parentColRefs;
+    private Map<Component, ValueExpression[]> _parentColRefs;
 
-    private DBToasterComponent(List<Component> relations, Map<Component, List<ColumnReference>> relColRefs) {
+    private String _equivalentSQL;
+
+    private DBToasterComponent(List<Component> relations, Map<Component, ValueExpression[]> relColRefs, String sql) {
 
         _parents = relations;
         _parentColRefs = relColRefs;
         StringBuilder nameBuilder = new StringBuilder();
         for (Component com : _parents) {
+
             com.setChild(this);
 
             if (nameBuilder.length() != 0) nameBuilder.append("_");
             nameBuilder.append(com.getName());
         }
         _componentName = nameBuilder.toString();
+        _equivalentSQL = sql;
     }
 
     public static class Builder {
         private List<Component> relations = new LinkedList<Component>();
-        private Map<Component, List<ColumnReference>> relColRefs = new HashMap<Component, List<ColumnReference>>();
+        private Map<Component, ValueExpression[]> relColRefs = new HashMap<Component, ValueExpression[]>();
 
         public Builder addRelation(Component relation, ColumnReference... columnReferences) {
             relations.add(relation);
+            //Doing this must handle the case in which parent relation doesn't have projection. How to determine the input tuple size?
+            //Therefore, it is better to explicitly specify all colreference of the relation when construct the Component
+            //ValueExpression[] cols = new ValueExpression[relation.getChainOperator().getProjection().getExpressions().size()];
 
-            if (!relColRefs.containsKey(relation)) {
-                relColRefs.put(relation, new LinkedList<ColumnReference>());
+            ValueExpression[] cols = new ValueExpression[columnReferences.length];
+
+            for (ColumnReference cref : columnReferences) {
+                cols[cref.getColumnIndex()] = cref;
             }
+            relColRefs.put(relation, cols);
 
-            relColRefs.get(relation).addAll(Arrays.asList(columnReferences));
+            setSchema(relation, cols);
             return this;
         }
 
         public DBToasterComponent build() {
-            return new DBToasterComponent(relations, relColRefs);
+            return new DBToasterComponent(relations, relColRefs, generateSQL());
         }
+
+        //--------------- The below code is only to generate an SQL query from the Component ---------- //
+        private List<String> schemas = new LinkedList<String>();
+        private List<String> joins = new LinkedList<String>();
+        private List<String> groupBys = new LinkedList<String>();
+        private String agg;
+
+        private void setSchema(Component relation, ValueExpression[] columnReferences) {
+
+            String schema = "CREATE STREAM " + relation.getName() + "(";
+            for (int i = 0; i < columnReferences.length; i++) {
+                String attr = "v" + i + " " + ((columnReferences[i].getType() instanceof LongConversion) ? "int" : "String");
+                schema = schema + attr;
+                if (i != columnReferences.length - 1) schema = schema + ",";
+            }
+            schema = schema + ") FROM FILE '' LINE DELIMITED csv;\n";
+            schemas.add(schema);
+        }
+
+        public Builder setJoinPerdicate(int joinOp, Component c1, int joinCol1, Component c2, int joinCol2) {
+            String join = c1.getName() + ".v" + joinCol1 + " " + getJoinOpString(joinOp) + " " + c2.getName() + ".v" + joinCol2;
+            joins.add(join);
+            return this;
+        }
+
+        private String getJoinOpString(int joinOp) {
+            switch(joinOp) {
+                case ComparisonPredicate.EQUAL_OP: return "=";
+                case ComparisonPredicate.GREATER_OP: return ">";
+                case ComparisonPredicate.LESS_OP: return "<";
+                default:
+                    throw new IllegalArgumentException();
+            }
+        }
+
+        public Builder setGroupBy(Component relation, int colId) {
+            groupBys.add(relation.getName() + ".v" + colId);
+            return this;
+        }
+
+        public Builder setAggregateOperators(String aggOp, Component relation, int colId) {
+            agg = aggOp + "(" + relation.getName() + ".v" + colId + ")";
+            return this;
+        }
+
+        public String generateSQL() {
+            StringBuilder sqlBuilder = new StringBuilder();
+            for (String schema : schemas) sqlBuilder.append(schema);
+
+            String groupBysStr = "";
+            for (int i = 0; i < groupBys.size(); i++) {
+                groupBysStr += groupBys.get(i);
+                if (i != groupBys.size() - 1) groupBysStr += ", ";
+            }
+
+            String from = "FROM ";
+            for (int i = 0; i < relations.size(); i++) {
+                from += relations.get(i).getName();
+                if (i != relations.size() - 1) from += ", ";
+            }
+
+            String where = "WHERE ";
+            for (int i = 0; i < joins.size(); i++) {
+                where += joins.get(i);
+                if (i != joins.size() - 1) where += " AND ";
+            }
+
+            sqlBuilder.append("SELECT " + groupBysStr + ", " + agg + " " + from + " " + where + " GROUP BY " + groupBysStr);
+            return sqlBuilder.toString();
+        }
+
     }
 
     @Override
@@ -171,16 +249,7 @@ public class DBToasterComponent implements Component {
     }
 
     public String getSQLQuery() {
-        String sql = "CREATE STREAM CUSTOMER(CUSTKEY int, MKTSEGMENT String)\n" +
-                "  FROM FILE '' LINE DELIMITED csv;\n" +
-                "\n" +
-                "CREATE STREAM ORDERS(ORDERKEY int, CUSTKEY int)\n" +
-                "  FROM FILE '' LINE DELIMITED csv;\n" +
-                "\n" +
-                "SELECT CUSTOMER.MKTSEGMENT, COUNT(ORDERS.ORDERKEY)\n" +
-                "FROM CUSTOMER join ORDERS on CUSTOMER.CUSTKEY=ORDERS.CUSTKEY\n" +
-                "GROUP BY CUSTOMER.MKTSEGMENT";
-        return sql;
+        return _equivalentSQL;
     }
 
     @Override
@@ -198,7 +267,7 @@ public class DBToasterComponent implements Component {
                 _chain.getAggregation(), conf);
 
         // should issue a warning
-        _joiner = new DBToasterJoin(getParents(), this,
+        _joiner = new StormDBToasterJoin(getParents(), this,
                 allCompNames,
                 //_firstPreAggProj, _secondPreAggProj,
                 _parentColRefs,

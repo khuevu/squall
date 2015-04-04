@@ -12,9 +12,9 @@ import ddbt.lib.IQuery;
 import java.io.Serializable;
 
 
-public class DBToasterApp implements Serializable {
+public class DBToasterEngine implements Serializable {
 
-    private static Logger LOG = Logger.getLogger(DBToasterApp.class);
+    private static Logger LOG = Logger.getLogger(DBToasterEngine.class);
 
     public static final byte TUPLE_DELETE = 0x00;
     public static final byte TUPLE_INSERT = 0x01;
@@ -29,9 +29,9 @@ public class DBToasterApp implements Serializable {
         return result;
     }
 
-    private IQuery query; // need a generic interface here
+    private IQuery query; // DBToaster Query class
 
-    public DBToasterApp(String queryClass) {
+    public DBToasterEngine(String queryClass) {
         try {
             LOG.info("Loading Query class: " + queryClass);
             Class dbtoasterAppClass = this.getClass().getClassLoader().loadClass(queryClass);

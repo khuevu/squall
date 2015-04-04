@@ -171,10 +171,19 @@ public class Main {
 	    }
 	}
 
-    final boolean distributed = SystemParameters.getBoolean(conf,
-                "DIP_DISTRIBUTED");
+
     // prepare the jar file for DBToasterComponents
     if (dbToasterComponents.size() > 0) {
+        generateDBToasterCode(conf, dbToasterComponents);
+    }
+
+	// printing infoID information and returning the result
+	// printInfoID(killer, queryPlan); commented out because IDs are now
+	// desriptive names
+	return builder;
+    }
+
+    private static void generateDBToasterCode(Config conf, List<DBToasterComponent> dbToasterComponents) {
         LOG.info("There are " + dbToasterComponents.size() + " DBToaster component in query plan");
         try {
             Path extractedDirPath = Files.createTempDirectory("squall-extracted-files");
@@ -185,17 +194,21 @@ public class Main {
                 //Don't have to unjar this file at the moment, because the generated classes are not packed in jar
                 DBToasterCompiler.compile(dbtComp.getSQLQuery(), dbtComp.getName(), extractedDir);
             }
+
+            final boolean distributed = SystemParameters.getBoolean(conf,
+                    "DIP_DISTRIBUTED");
+
             if (distributed) {
+                // If in distributed mode, add the generated classes to the squall jar to be upload to storm cluster.
                 String defaultStormJar = System.getProperty("storm.jar");
-                //String targetJar = "/tmp/squall-standalone-" + (new Date().getTime()) + ".jar";
                 String targetJar = Files.createTempFile("squall-standalone", ".jar").toString();
 
-                // Unjar the defaultStormJar to update
                 JarUtilities.extractJarFile(defaultStormJar, extractedDir);
                 JarUtilities.createJar(targetJar, extractedDir);
-                System.setProperty("storm.jar", targetJar);
+                System.setProperty("storm.jar", targetJar); // StormSubmitter will upload jar file in -Dstorm.jar
 
             } else {
+                // if in local mode, add the generated classes to classpath
                 URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
                 Class<URLClassLoader> urlClass = URLClassLoader.class;
                 Method method = urlClass.getDeclaredMethod("addURL", new Class[]{URL.class});
@@ -212,12 +225,6 @@ public class Main {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
-    }
-
-	// printing infoID information and returning the result
-	// printInfoID(killer, queryPlan); commented out because IDs are now
-	// desriptive names
-	return builder;
     }
 
     private static void printInfoID(TopologyKiller killer,
@@ -430,7 +437,7 @@ public class Main {
 		    .getQueryPlan();
 	} else if (queryName.equalsIgnoreCase("dummy")) {
         System.out.println("DUMMY query plan");
-        queryPlan = new HyracksDummyPlan(conf).getQueryBuilder();
+        queryPlan = new HyracksDBToasterPlan(conf).getQueryBuilder();
     }
 
 	// ... this line

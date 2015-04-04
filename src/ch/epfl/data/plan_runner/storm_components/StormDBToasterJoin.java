@@ -8,13 +8,12 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Tuple;
 import ch.epfl.data.plan_runner.components.ComponentProperties;
 import ch.epfl.data.plan_runner.expressions.ColumnReference;
+import ch.epfl.data.plan_runner.expressions.ValueExpression;
 import ch.epfl.data.plan_runner.operators.AggregateOperator;
 import ch.epfl.data.plan_runner.operators.ChainOperator;
 import ch.epfl.data.plan_runner.operators.Operator;
-import ch.epfl.data.plan_runner.operators.ProjectOperator;
-import ch.epfl.data.plan_runner.storage.BasicStore;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
-import ch.epfl.data.plan_runner.utilities.DBToasterApp;
+import ch.epfl.data.plan_runner.utilities.DBToasterEngine;
 import ch.epfl.data.plan_runner.utilities.MyUtilities;
 import ch.epfl.data.plan_runner.utilities.PeriodicAggBatchSend;
 import ch.epfl.data.plan_runner.utilities.SystemParameters;
@@ -27,16 +26,10 @@ import java.util.*;
 import java.util.concurrent.Semaphore;
 
 
-public class DBToasterJoin extends StormBoltComponent {
+public class StormDBToasterJoin extends StormBoltComponent {
 
     private static final long serialVersionUID = 1L;
-    private static Logger LOG = Logger.getLogger(DBToasterJoin.class);
-
-    //private final ProjectOperator _firstPreAggProj, _secondPreAggProj; // exists
-    // only
-    // for
-    // preaggregations
-    // performed on the output of the aggregationStorage
+    private static Logger LOG = Logger.getLogger(StormDBToasterJoin.class);
 
     private final ChainOperator _operatorChain;
 
@@ -56,27 +49,26 @@ public class DBToasterJoin extends StormBoltComponent {
     protected DateFormat _statDateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
     protected StatisticsUtilities _statsUtils;
 
-    private DBToasterApp dbtoasterApp;
+    private DBToasterEngine dbtoasterEngine;
     private static final String DBT_GEN_PKG = "ddbt.gen.";
     private String _dbToasterQueryName;
 
     private StormEmitter[] _emitters;
-    private Map<String, List<ColumnReference>> _indexedColRefs;
+    private Map<String, ValueExpression[]> _indexedColRefs;
 
-    public DBToasterJoin(StormEmitter[] emitters,
-                         ComponentProperties cp, List<String> allCompNames,
-                         //ProjectOperator firstPreAggProj, ProjectOperator secondPreAggProj,
-                         Map<? extends StormEmitter, List<ColumnReference>> emitterColRefs,
-                         int hierarchyPosition, TopologyBuilder builder,
-                         TopologyKiller killer, Config conf) {
+    public StormDBToasterJoin(StormEmitter[] emitters,
+                              ComponentProperties cp, List<String> allCompNames,
+                              Map<? extends StormEmitter, ValueExpression[]> emitterColRefs,
+                              int hierarchyPosition, TopologyBuilder builder,
+                              TopologyKiller killer, Config conf) {
         super(cp, allCompNames, hierarchyPosition, conf);
 
 
         _emitters = emitters;
-        _indexedColRefs = new HashMap<String, List<ColumnReference>>();
+        _indexedColRefs = new HashMap<String, ValueExpression[]>();
         for (StormEmitter e : _emitters) {
             String emitterIndex = String.valueOf(allCompNames.indexOf(e.getName()));
-            List<ColumnReference> colRefs = emitterColRefs.get(e);
+            ValueExpression[] colRefs = emitterColRefs.get(e);
             _indexedColRefs.put(emitterIndex, colRefs);
         }
 
@@ -114,7 +106,7 @@ public class DBToasterJoin extends StormBoltComponent {
     public void prepare(Map map, TopologyContext tc, OutputCollector collector) {
         super.prepare(map, tc, collector);
 
-        dbtoasterApp = new DBToasterApp(DBT_GEN_PKG + _dbToasterQueryName);
+        dbtoasterEngine = new DBToasterEngine(DBT_GEN_PKG + _dbToasterQueryName);
     }
 
 
@@ -159,10 +151,7 @@ public class DBToasterJoin extends StormBoltComponent {
             } catch (final InterruptedException ex) {
             }
 
-        //System.out.println("BEFORE CHAIN Tuple: " + Arrays.toString(tuple.toArray()));
         tuple = _operatorChain.process(tuple);
-
-        //System.out.println("AFTER CHAIN tuple: " + Arrays.toString(tuple.toArray()));
 
         if (MyUtilities.isAggBatchOutputMode(_aggBatchOutputMillis))
             _semAgg.release();
@@ -210,7 +199,6 @@ public class DBToasterJoin extends StormBoltComponent {
 
         if (receivedDumpSignal(stormTupleRcv)) {
             // the result is dumpped here
-            System.out.println("Received Dumped Signal");
             MyUtilities.dumpSignal(this, stormTupleRcv, getCollector());
             return;
         }
@@ -220,64 +208,20 @@ public class DBToasterJoin extends StormBoltComponent {
                     .getStringByField(StormComponent.COMP_INDEX); // getString(0);
             final List<String> tuple = (List<String>) stormTupleRcv
                     .getValueByField(StormComponent.TUPLE); // getValue(1);
-            final String inputTupleHash = stormTupleRcv
-                    .getStringByField(StormComponent.HASH);// getString(2);
 
             if (processFinalAck(tuple, stormTupleRcv)) {
                 System.out.println("Processing final ack");
                 // need to close db toaster app here
-                dbtoasterApp.endStream();
+                dbtoasterEngine.endStream();
                 return;
             }
 
-            processNonLastTuple(inputComponentIndex, tuple, inputTupleHash,
+            processNonLastTuple(inputComponentIndex, tuple,
                     stormTupleRcv, true);
-
+        } else {
+            throw new RuntimeException("Manual Batching Mode is not supported");
         }
-//        else {
-//            final String inputComponentIndex = stormTupleRcv
-//                    .getStringByField(StormComponent.COMP_INDEX); // getString(0);
-//            final String inputBatch = stormTupleRcv
-//                    .getStringByField(StormComponent.TUPLE);// getString(1);
-//
-//            final String[] wholeTuples = inputBatch
-//                    .split(SystemParameters.MANUAL_BATCH_TUPLE_DELIMITER);
-//            final int batchSize = wholeTuples.length;
-//            for (int i = 0; i < batchSize; i++) {
-//                // parsing
-//                final String currentTuple = new String(wholeTuples[i]);
-//                final String[] parts = currentTuple
-//                        .split(SystemParameters.MANUAL_BATCH_HASH_DELIMITER);
-//
-//                String inputTupleHash = null;
-//                String inputTupleString = null;
-//                if (parts.length == 1)
-//                    // lastAck
-//                    inputTupleString = new String(parts[0]);
-//                else {
-//                    inputTupleHash = new String(parts[0]);
-//                    inputTupleString = new String(parts[1]);
-//                }
-//                final List<String> tuple = MyUtilities.stringToTuple(
-//                        inputTupleString, getConf());
-//
-//                // final Ack check
-//                if (processFinalAck(tuple, stormTupleRcv)) {
-//                    if (i != batchSize - 1)
-//                        throw new RuntimeException(
-//                                "Should not be here. LAST_ACK is not the last tuple!");
-//                    return;
-//                }
-//
-//                // processing a tuple
-//                if (i == batchSize - 1)
-//                    processNonLastTuple(inputComponentIndex, tuple,
-//                            inputTupleHash, stormTupleRcv, true);
-//                else
-//                    processNonLastTuple(inputComponentIndex, tuple,
-//                            inputTupleHash, stormTupleRcv, false);
-//            }
-//        }
+
         getCollector().ack(stormTupleRcv);
     }
 
@@ -325,7 +269,7 @@ public class DBToasterJoin extends StormBoltComponent {
         return null;
     }
 
-    private List<List<String>> convertSnapshotToTuples(Object[] stream) {
+    private List<List<String>> convertUpdateStreamToTuples(Object[] stream) {
         List<List<String>> tuples = new LinkedList<List<String>>();
         for (Object o : stream) {
             Object[] t = (Object[]) o;
@@ -337,39 +281,26 @@ public class DBToasterJoin extends StormBoltComponent {
     }
 
     protected void performJoin(Tuple stormTupleRcv, List<String> tuple,
-                               String inputTupleHash,
-                               List<ColumnReference> columnReferences,
+                               ValueExpression[] columnReferences,
                                boolean isLastInBatch) {
 
         List<Object> typedTuple = new ArrayList<Object>();
 
-        //System.out.println("Inserting tuple from " + stormTupleRcv.getSourceComponent() + " : " + Arrays.toString(typedTuple.toArray()));
         for (int i = 0; i < tuple.size(); i++) {
-            ColumnReference colRef = getColReference(i, columnReferences);
-            Object t;
-            if (colRef != null) {
-                //System.out.println("For col: " + i + " have conversion of type: " + colRef.getType());
-                t = colRef.eval(tuple);
-            } else {
-                t = tuple.get(i);
-            }
-            typedTuple.add(t);
+            ValueExpression ve = columnReferences[i];
+            Object value = ve.eval(tuple);
+            typedTuple.add(value);
         }
 
-        System.out.println("Insert tuple: " + stormTupleRcv.getSourceComponent() + " " + Arrays.toString(typedTuple.toArray()));
-        dbtoasterApp.insertTuple(stormTupleRcv.getSourceComponent(), typedTuple.toArray());
+        //System.out.println("Insert tuple: " + stormTupleRcv.getSourceComponent() + " " + Arrays.toString(typedTuple.toArray()));
+        dbtoasterEngine.insertTuple(stormTupleRcv.getSourceComponent(), typedTuple.toArray());
 
-        Object[] stream = dbtoasterApp.getStream();
-        List<List<String>> tuples = convertSnapshotToTuples(stream);
+        Object[] stream = dbtoasterEngine.getStream();
+        List<List<String>> tuples = convertUpdateStreamToTuples(stream);
 
         for (List<String> outputTuple : tuples) {
-//            System.out.println("output tuple: " + Arrays.toString(outputTuple.toArray()));
             applyOperatorsAndSend(stormTupleRcv, outputTuple, isLastInBatch);
         }
-
-        //dbtoasterApp.getSnapShot();
-        //final List<String> oppositeStringTupleList = oppositeStorage
-        //        .access(inputTupleHash);
 
     }
 
@@ -377,12 +308,6 @@ public class DBToasterJoin extends StormBoltComponent {
     protected void printStatistics(int type) {
         if (_statsUtils.isTestMode())
             if (getHierarchyPosition() == StormComponent.FINAL_COMPONENT) {
-                // computing variables
-//                final int size1 = ((KeyValueStore<String, String>) _firstRelationStorage)
-//                        .size();
-//                final int size2 = ((KeyValueStore<String, String>) _secondRelationStorage)
-//                        .size();
-//                final int totalSize = size1 + size2;
                 final String ts = _statDateFormat.format(_cal.getTime());
 
                 // printing
@@ -397,12 +322,6 @@ public class DBToasterJoin extends StormBoltComponent {
                                 + ","
                                 + " TimeStamp:,"
                                 + ts
-//                                + ", FirstStorage:,"
-//                                + size1
-//                                + ", SecondStorage:,"
-//                                + size2
-//                                + ", Total:,"
-//                                + totalSize
                                 + ", Memory used: ,"
                                 + StatisticsUtilities.bytesToMegabytes(memory)
                                 + ","
@@ -415,12 +334,6 @@ public class DBToasterJoin extends StormBoltComponent {
                                 + ","
                                 + " TimeStamp:,"
                                 + ts
-//                                + ", FirstStorage:,"
-//                                + size1
-//                                + ", SecondStorage:,"
-//                                + size2
-//                                + ", Total:,"
-//                                + totalSize
                                 + ", Memory used: ,"
                                 + StatisticsUtilities.bytesToMegabytes(memory)
                                 + ","
@@ -441,12 +354,6 @@ public class DBToasterJoin extends StormBoltComponent {
                                 + ","
                                 + " TimeStamp:,"
                                 + ts
-//                                + ", FirstStorage:,"
-//                                + size1
-//                                + ", SecondStorage:,"
-//                                + size2
-//                                + ", Total:,"
-//                                + totalSize
                                 + ", Memory used: ,"
                                 + StatisticsUtilities.bytesToMegabytes(memory)
                                 + ","
@@ -473,11 +380,6 @@ public class DBToasterJoin extends StormBoltComponent {
                                 + " TimeStamp:,"
                                 + ts
                                 + ", FirstStorage:,"
-//                                + size1
-//                                + ", SecondStorage:,"
-//                                + size2
-//                                + ", Total:,"
-//                                + totalSize
                                 + ", Memory used: ,"
                                 + StatisticsUtilities.bytesToMegabytes(memory)
                                 + ","
@@ -491,45 +393,11 @@ public class DBToasterJoin extends StormBoltComponent {
     }
 
     private void processNonLastTuple(String inputComponentIndex,
-                                     List<String> tuple, String inputTupleHash, Tuple stormTupleRcv,
+                                     List<String> tuple, Tuple stormTupleRcv,
                                      boolean isLastInBatch) {
 
-        boolean isFromFirstEmitter = false;
-        BasicStore<ArrayList<String>> affectedStorage, oppositeStorage;
-        ProjectOperator projPreAgg;
-//        if (_firstEmitterIndex.equals(inputComponentIndex)) {
-//            // R update
-//            isFromFirstEmitter = true;
-//            affectedStorage = _firstRelationStorage;
-//            oppositeStorage = _secondRelationStorage;
-//            projPreAgg = _secondPreAggProj;
-//        } else if (_secondEmitterIndex.equals(inputComponentIndex)) {
-//            // S update
-//            isFromFirstEmitter = false;
-//            affectedStorage = _secondRelationStorage;
-//            oppositeStorage = _firstRelationStorage;
-//            projPreAgg = _firstPreAggProj;
-//        } else
-//            throw new RuntimeException("InputComponentName "
-//                    + inputComponentIndex + " doesn't match neither "
-//                    + _firstEmitterIndex + " nor " + _secondEmitterIndex + ".");
-//
-//        // add the stormTuple to the specific storage
-//        if (affectedStorage instanceof AggregationStorage)
-//            // For preaggregations, we have to update the storage, not to insert
-//            // to it
-//            affectedStorage.update(tuple, inputTupleHash);
-//        else {
-//            final String inputTupleString = MyUtilities.tupleToString(tuple,
-//                    getConf());
-//            affectedStorage.insert(inputTupleHash, inputTupleString);
-//        }
+        ValueExpression[] colRefs = _indexedColRefs.get(inputComponentIndex);
+        performJoin(stormTupleRcv, tuple, colRefs, isLastInBatch);
 
-        List<ColumnReference> colRefs = _indexedColRefs.get(inputComponentIndex);
-        performJoin(stormTupleRcv, tuple, inputTupleHash, colRefs, isLastInBatch);
-
-//        if ((((KeyValueStore<String, String>) _firstRelationStorage).size() + ((KeyValueStore<String, String>) _secondRelationStorage)
-//                .size()) % _statsUtils.getDipInputFreqPrint() == 0)
-//            printStatistics(SystemParameters.INPUT_PRINT);
     }
 }

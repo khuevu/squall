@@ -20,7 +20,6 @@
         [scala-reflect "2.10.2-RC1"]
         [scalariform "0.1.4"]
         [uncommons-maths "1.2.2a"]
-        [dbtoasterquery "0.0.1"]
         [dbtoaster "0.0.1"]
                   ]
   :dev-dependencies [
