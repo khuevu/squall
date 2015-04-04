@@ -1,6 +1,8 @@
 package ch.epfl.data.plan_runner.utilities;
 
 
+import org.apache.log4j.Logger;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +15,9 @@ import static java.nio.file.StandardCopyOption.*;
 
 public class JarUtilities {
 
+    private static Logger LOG = Logger.getLogger(JarUtilities.class);
+
+
     /**
      * Extract jarFile to destDir
      *
@@ -21,6 +26,7 @@ public class JarUtilities {
      * @throws IOException
      */
     public static void extractJarFile(String jarFile, String destDir) throws IOException {
+        LOG.info("Extracting Jar file: " + jarFile + " to : " + destDir);
         java.util.jar.JarFile jar = new java.util.jar.JarFile(jarFile);
         java.util.Enumeration enumEntries = jar.entries();
         while (enumEntries.hasMoreElements()) {
@@ -44,6 +50,7 @@ public class JarUtilities {
      * @throws IOException
      */
     public static void createJar(String targetJar, String inputDirectory) throws IOException {
+        LOG.info("Createing Jar " + targetJar + " from files in : " + inputDirectory);
         JarOutputStream target = new JarOutputStream(new FileOutputStream(targetJar));
         addToJar(new File(inputDirectory), target, inputDirectory);
         target.close();

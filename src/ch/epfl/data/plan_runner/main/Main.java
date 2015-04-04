@@ -1,6 +1,12 @@
 package ch.epfl.data.plan_runner.main;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import ch.epfl.data.plan_runner.components.DBToasterComponent;
@@ -165,34 +171,47 @@ public class Main {
 	    }
 	}
 
+    final boolean distributed = SystemParameters.getBoolean(conf,
+                "DIP_DISTRIBUTED");
     // prepare the jar file for DBToasterComponents
     if (dbToasterComponents.size() > 0) {
         LOG.info("There are " + dbToasterComponents.size() + " DBToaster component in query plan");
-
-        String defaultStormJar = System.getProperty("storm.jar");
-
-        for (DBToasterComponent dbtComp : dbToasterComponents) {
-            LOG.info("Generating DBToaster code for " + dbtComp.getName() + " Component");
-            DBToasterCompiler.compile(dbtComp.getSQLQuery(), dbtComp.getName(), "/tmp/squall/");
-            //TODO: don't have to unjar this file at the moment, because the generated classes are not packed in jar
-        }
-
-        // Unjar the defaultStormJar to update
         try {
-            JarUtilities.extractJarFile(defaultStormJar, "/tmp/squall/");
+            Path extractedDirPath = Files.createTempDirectory("squall-extracted-files");
+            String extractedDir = extractedDirPath.toString();
+
+            for (DBToasterComponent dbtComp : dbToasterComponents) {
+                LOG.info("Generating DBToaster code for " + dbtComp.getName() + " Component");
+                //Don't have to unjar this file at the moment, because the generated classes are not packed in jar
+                DBToasterCompiler.compile(dbtComp.getSQLQuery(), dbtComp.getName(), extractedDir);
+            }
+            if (distributed) {
+                String defaultStormJar = System.getProperty("storm.jar");
+                //String targetJar = "/tmp/squall-standalone-" + (new Date().getTime()) + ".jar";
+                String targetJar = Files.createTempFile("squall-standalone", ".jar").toString();
+
+                // Unjar the defaultStormJar to update
+                JarUtilities.extractJarFile(defaultStormJar, extractedDir);
+                JarUtilities.createJar(targetJar, extractedDir);
+                System.setProperty("storm.jar", targetJar);
+
+            } else {
+                URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
+                Class<URLClassLoader> urlClass = URLClassLoader.class;
+                Method method = urlClass.getDeclaredMethod("addURL", new Class[]{URL.class});
+                method.setAccessible(true);
+                LOG.info("Add extracted location: " + extractedDirPath.toUri() + " to Classpath");
+                method.invoke(urlClassLoader, new Object[]{extractedDirPath.toUri().toURL()});
+            }
         } catch (IOException e) {
-            LOG.error("Fail to extract the jar: " + defaultStormJar, e);
+            LOG.error("Fail to create updated jar, ", e);
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
-
-        String targetJar = "/tmp/squall-standalone-" + (new Date().getTime()) + ".jar";
-        try {
-            JarUtilities.createJar(targetJar, "/tmp/squall/");
-        } catch (IOException e) {
-            LOG.error("Fail to create the updated jar: " + targetJar, e);
-        }
-
-        System.setProperty("storm.jar", targetJar);
-
     }
 
 	// printing infoID information and returning the result
