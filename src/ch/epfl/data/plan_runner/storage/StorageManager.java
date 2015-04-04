@@ -105,23 +105,25 @@ public class StorageManager<R> implements Serializable {
     }
 
     public void deleteAllFilesRootDir() {
-	final File directory = new File(rootDir);
-	// Get file ending with .ssf in rootDir
-	final File[] files = directory.listFiles(new FilenameFilter() {
-	    @Override
-	    public boolean accept(File dir, String name) {
-		return name.endsWith(".ssf");
-	    }
-	});
-	// Delete all the above files
-	for (final File file : files)
-	    // Delete each file
-	    if (!file.delete()) {
-		// Failed to delete file
-		LOG.info("Squall StorageManager: Failed to delete file " + file
-			+ " during initial cleanup...");
-		System.exit(-1);
-	    }
+        LOG.info("Delete all Files RootDir at: " + rootDir);
+        final File directory = new File(rootDir);
+        // Get file ending with .ssf in rootDir
+        final File[] files = directory.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".ssf");
+            }
+        });
+        // Delete all the above files
+        if (files != null)
+            for (final File file : files)
+                // Delete each file
+                if (!file.delete()) {
+                    // Failed to delete file
+                    LOG.info("Squall StorageManager: Failed to delete file " + file
+                            + " during initial cleanup...");
+                    System.exit(-1);
+                }
     }
 
     public boolean existsInStorage(String groupId) {
