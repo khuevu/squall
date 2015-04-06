@@ -146,7 +146,6 @@ public class StormHyperCubeJoin extends StormBoltComponent {
                     _semAgg.release();
                 }
             }
-
     }
 
     protected void applyOperatorsAndSend(Tuple stormTupleRcv,
@@ -293,24 +292,65 @@ public class StormHyperCubeJoin extends StormBoltComponent {
 
     /*************** Should be finished *****************/
     private void join(Tuple stormTuple, List<String> tuple,
-                      boolean isFromFirstEmitter, TupleStorage oppositeStorage,
+                      int emitterIndex, List<TupleStorage> relations,
                       boolean isLastInBatch) {
+
+        for (int i = 0; i < relations.size(); i++)
+            if (relations.get(i) == null || relations.get(i).size() == 0)
+                return;
+
+        long lineageTimestamp = 0;
+        lineageTimestamp = stormTuple
+                .getLongByField(StormComponent.TIMESTAMP);
+        List<List<String>> outputTuples = new ArrayList<List<String>>();
+        joinThereComponents(relations, outputTuples);
+
+        for (int i = 0; i < outputTuples.size(); i++) {
+            applyOperatorsAndSend(stormTuple, outputTuples.get(i), lineageTimestamp, isLastInBatch);
+        }
     }
 
+
+
+
+
+    public void joinThereComponents(List<TupleStorage> relations, List<List<String>> outputTuples) {
+        for (int i = 0; i < relations.get(0).size(); i++) {
+            String tuple1String = relations.get(0).get(i);
+            final List<String> typl1Tuple = MyUtilities.stringToTuple(tuple1String, getComponentConfiguration());
+
+            for (int j = 0; j < relations.get(1).size(); j++) {
+                String tuple2String = relations.get(1).get(i);
+                final List<String> typl2Tuple = MyUtilities.stringToTuple(tuple2String, getComponentConfiguration());
+
+                for (int k = 0; k < relations.get(2).size(); k++) {
+                    String tuple3String = relations.get(2).get(i);
+                    final List<String> typl3Tuple = MyUtilities.stringToTuple(tuple3String, getComponentConfiguration());
+
+                    List<String> outputTuple = null;
+                    outputTuple = MyUtilities.createOutputTupleForThere(typl1Tuple, typl2Tuple, typl3Tuple);
+                    outputTuples.add(outputTuple);
+                }
+            }
+        }
+    }
+
+    /*************** Should be finished *****************/
     protected void performJoin(Tuple stormTupleRcv, List<String> tuple,
-                               String inputTupleHash, boolean isFromFirstEmitter,
+                               String inputTupleHash, int emitterIndex,
                                List<Index> oppositeIndexes, List<String> valuesToApplyOnIndex,
-                               TupleStorage oppositeStorage, boolean isLastInBatch) {
-        final TupleStorage tuplesToJoin = new TupleStorage();
-        selectTupleToJoin(oppositeStorage, oppositeIndexes, isFromFirstEmitter,
+                               List<TupleStorage> storages, boolean isLastInBatch) {
+        final List<TupleStorage> tuplesToJoin = new ArrayList<TupleStorage>();
+
+        selectTupleToJoin(storages, emitterIndex,
                 valuesToApplyOnIndex, tuplesToJoin);
-        join(stormTupleRcv, tuple, isFromFirstEmitter, tuplesToJoin,
+
+        join(stormTupleRcv, tuple, emitterIndex, tuplesToJoin,
                 isLastInBatch);
     }
 
     @Override
     protected void printStatistics(int type) {
-
     }
 
     /*************** Should be finished *****************/
@@ -321,9 +361,18 @@ public class StormHyperCubeJoin extends StormBoltComponent {
     }
 
     /*************** Should be finished *****************/
-    private void selectTupleToJoin(TupleStorage oppositeStorage,
-                                   List<Index> oppositeIndexes, boolean isFromFirstEmitter,
-                                   List<String> valuesToApplyOnIndex, TupleStorage tuplesToJoin) {
+    private void selectTupleToJoin(List<TupleStorage> storages, int emitterIndex, List<String> tuple,
+                                   List<TupleStorage> tuplesToJoin) {
+
+        for (int i = 0; i < storages.size(); i++) {
+            if (i == emitterIndex) {
+                TupleStorage st = new TupleStorage();
+                st.insert(tuple.toString());
+            } else {
+                tuplesToJoin.get(i).copy(storages.get(i));
+            }
+        }
+        return;
 
     }
 

@@ -408,6 +408,23 @@ public class MyUtilities {
 	return outputTuple;
     }
 
+    public static List<String> createOutputTupleForThere(List<String> firstTuple, List<String> secondTuple,
+                                                 List<String> thirdTuple) {
+        final List<String> outputTuple = new ArrayList<String>();
+
+        for (int j = 0; j < firstTuple.size(); j++)
+            // first relation (R)
+            outputTuple.add(firstTuple.get(j));
+        for (int j = 0; j < secondTuple.size(); j++)
+            outputTuple.add(secondTuple.get(j));
+
+        for (int j = 0; j < thirdTuple.size(); j++)
+            outputTuple.add(thirdTuple.get(j));
+
+
+        return outputTuple;
+    }
+
     public static List<String> createOutputTuple(List<String> firstTuple,
 	    List<String> secondTuple, List<Integer> joinParams) {
 	final List<String> outputTuple = new ArrayList<String>();
