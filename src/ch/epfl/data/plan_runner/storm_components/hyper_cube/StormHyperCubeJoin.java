@@ -295,6 +295,8 @@ public class StormHyperCubeJoin extends StormBoltComponent {
                       int emitterIndex, List<TupleStorage> relations,
                       boolean isLastInBatch) {
 
+        if (emitterIndex == -1) return;
+
         for (int i = 0; i < relations.size(); i++)
             if (relations.get(i) == null || relations.get(i).size() == 0)
                 return;
@@ -309,9 +311,6 @@ public class StormHyperCubeJoin extends StormBoltComponent {
             applyOperatorsAndSend(stormTuple, outputTuples.get(i), lineageTimestamp, isLastInBatch);
         }
     }
-
-
-
 
 
     public void joinThereComponents(List<TupleStorage> relations, List<List<String>> outputTuples) {
@@ -358,6 +357,35 @@ public class StormHyperCubeJoin extends StormBoltComponent {
                                      String inputTupleString, //
                                      List<String> tuple, // these two are the same
                                      String inputTupleHash, Tuple stormTupleRcv, boolean isLastInBatch) {
+
+
+        // add the stormTuple to the specific storage
+        if (MyUtilities.isStoreTimestamp(getConf(), getHierarchyPosition())) {
+            final long incomingTimestamp = stormTupleRcv
+                    .getLongByField(StormComponent.TIMESTAMP);
+            inputTupleString = incomingTimestamp
+                    + SystemParameters.STORE_TIMESTAMP_DELIMITER
+                    + inputTupleString;
+        }
+
+        int emitterIndex = -1;
+        TupleStorage affectedStorage = null;
+        for (int i = 0; i < emitterIndexes.size(); i++) {
+            if (inputComponentIndex.equals(emitterIndexes.get(i))) {
+                affectedStorage = relationStorages.get(i);
+                emitterIndex = i;
+                break;
+            }
+        }
+
+        final int row_id = affectedStorage.insert(inputTupleString);
+        List<String> valuesToApplyOnIndex = null;
+
+
+        performJoin(stormTupleRcv, tuple, inputTupleHash, emitterIndex,
+                null, valuesToApplyOnIndex, relationStorages,
+                isLastInBatch);
+
     }
 
     /*************** Should be finished *****************/
