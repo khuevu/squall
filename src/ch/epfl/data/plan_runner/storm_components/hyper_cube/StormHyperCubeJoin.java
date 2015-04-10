@@ -18,8 +18,7 @@ import ch.epfl.data.plan_runner.storm_components.StormEmitter;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
 import ch.epfl.data.plan_runner.thetajoin.indexes.Index;
 import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.ContentSensitiveMatrixAssignment;
-import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.EquiMatrixAssignment;
-import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.MatrixAssignment;
+import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.*;
 import ch.epfl.data.plan_runner.utilities.MyUtilities;
 import ch.epfl.data.plan_runner.utilities.PeriodicAggBatchSend;
 import ch.epfl.data.plan_runner.utilities.SystemParameters;
@@ -44,7 +43,7 @@ public class StormHyperCubeJoin extends StormBoltComponent {
     private List<TupleStorage> relationStorages;
     private List<String> emitterIndexes;
     private long numSentTuples = 0;
-    private List<Predicate> joinPredicates;
+    private Predicate joinPredicates;
 
     private ChainOperator operatorChain;
     // position to test for equality in first and second emitter
@@ -69,7 +68,7 @@ public class StormHyperCubeJoin extends StormBoltComponent {
     protected StatisticsUtilities _statsUtils;
 
     public StormHyperCubeJoin (ArrayList<StormEmitter> emitters, ComponentProperties cp,
-                               List<String> allCompNames, List<Predicate> joinPredicates, int hierarchyPosition,
+                               List<String> allCompNames, Predicate joinPredicates, int hierarchyPosition,
                                TopologyBuilder builder, TopologyKiller killer, Config conf,
                                InterchangingComponent interComp, TypeConversion wrapper) {
 
@@ -90,9 +89,11 @@ public class StormHyperCubeJoin extends StormBoltComponent {
 
         /*************** Should be finished *****************/
         // Change to HuperCube implementation
-        final MatrixAssignment _currentMappingAssignment;
-
-        _currentMappingAssignment = new ContentSensitiveMatrixAssignment(conf);
+        final HyperCubeAssignment _currentMappingAssignment;
+        long[] cardinality = new long[allCompNames.size()];
+        for (int i = 0; i < allCompNames.size(); i++)
+            cardinality[i] = SystemParameters.getInt(conf, emitters.get(i).getName() + "_CARD");
+        _currentMappingAssignment = new HyperCubeAssignerFactory().getAssigner(1021, cardinality);
 
         if (interComp == null)
             currentBolt = MyUtilities.hyperCubeAttachEmitterComponents(currentBolt,
@@ -118,7 +119,7 @@ public class StormHyperCubeJoin extends StormBoltComponent {
             relationStorages.add(new TupleStorage());
 
 
-        if (joinPredicates != null && joinPredicates.size() > 0) {
+        if (joinPredicates != null) {
             createIndexes();
             existIndexes = true;
         } else

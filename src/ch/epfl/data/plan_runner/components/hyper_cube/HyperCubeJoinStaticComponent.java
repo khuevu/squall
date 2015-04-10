@@ -12,6 +12,7 @@ import ch.epfl.data.plan_runner.predicates.Predicate;
 import ch.epfl.data.plan_runner.storm_components.InterchangingComponent;
 import ch.epfl.data.plan_runner.storm_components.StormBoltComponent;
 import ch.epfl.data.plan_runner.storm_components.StormComponent;
+import ch.epfl.data.plan_runner.storm_components.StormEmitter;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
 import ch.epfl.data.plan_runner.storm_components.hyper_cube.StormHyperCubeJoin;
 import ch.epfl.data.plan_runner.utilities.MyUtilities;
@@ -150,8 +151,12 @@ public class HyperCubeJoinStaticComponent implements Component {
         MyUtilities.checkBatchOutput(batchOutputMillis,
 		chain.getAggregation(), conf);
 
-        /*************** Should be finished *****************/
         // _joiner = new StormThetaJoin();
+        ArrayList<StormEmitter> emitters = new ArrayList<StormEmitter>();
+        for (StormEmitter se : parents)
+            emitters.add(se);
+        joiner = new StormHyperCubeJoin(emitters, this, allCompNames, joinPredicate,
+                hierarchyPosition, builder, killer, conf, interComp, contentSensitiveThetaJoinWrapper);
 
     }
     @Override
