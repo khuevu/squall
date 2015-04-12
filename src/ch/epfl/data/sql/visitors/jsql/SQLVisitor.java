@@ -91,8 +91,11 @@ public class SQLVisitor implements SelectVisitor, FromItemVisitor,
 	// From a list of joins, create collection of elements like {R->{S,
 	// R.A=S.A}}
 	final JoinTablesExprsVisitor jteVisitor = new JoinTablesExprsVisitor();
-	for (final Join join : _joinList)
-	    join.getOnExpression().accept(jteVisitor);
+	for (final Join join : _joinList) {
+        Expression onExp = join.getOnExpression();
+        if (onExp != null)
+            onExp.accept(jteVisitor);
+    }
 	_jte = jteVisitor.getJoinTablesExp();
     }
 

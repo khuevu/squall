@@ -9,7 +9,6 @@ import ch.epfl.data.plan_runner.expressions.ColumnReference;
 import ch.epfl.data.plan_runner.operators.AggregateOperator;
 import ch.epfl.data.plan_runner.operators.DBToasterAggregateOperator;
 import ch.epfl.data.plan_runner.operators.ProjectOperator;
-import ch.epfl.data.plan_runner.predicates.ComparisonPredicate;
 
 import java.util.Map;
 
@@ -35,31 +34,20 @@ public class HyracksDBToasterPlan {
         DBToasterComponent.Builder builder = new DBToasterComponent.Builder();
         builder.addRelation(relationCustomer, new ColumnReference(_lc, 0), new ColumnReference(_sc, 1));
         builder.addRelation(relationOrders, new ColumnReference(_lc, 0), new ColumnReference(_lc, 1));
-
-        //This part is only to support generating the sql query
-        builder.setJoinPerdicate(ComparisonPredicate.EQUAL_OP, relationCustomer, 0, relationOrders, 1);
-        builder.setGroupBy(relationCustomer, 1);
-        builder.setAggregateOperators("COUNT", relationOrders, 0);
-
+        builder.setSQL("SELECT CUSTOMER.f1, COUNT(ORDERS.f0) FROM CUSTOMER, ORDERS WHERE CUSTOMER.f0 = ORDERS.f1 GROUP BY CUSTOMER.f1");
 
         DBToasterComponent dbToasterComponent = builder.build();
-
-//        final ColumnReference colCustomer = new ColumnReference(_lc, 0);
-//        final ColumnReference colOrders = new ColumnReference(_lc, 1);
-//        final ComparisonPredicate comp = new ComparisonPredicate(
-//                ComparisonPredicate.EQUAL_OP, colCustomer, colOrders);
-
 
         //column 1 in agg constructor is refer to the output tuple while column 1 in setGroupBy refer to the input after join
         AggregateOperator agg = new DBToasterAggregateOperator<Long>(new ColumnReference<Long>(_lc, 1), conf);
         dbToasterComponent.add(agg);
 
         _queryBuilder.add(dbToasterComponent);
-        //_queryBuilder.createEquiJoin(relationCustomer, relationOrders);
         // -------------------------------------------------------------------------------------
     }
 
     public QueryBuilder getQueryBuilder() {
         return _queryBuilder;
     }
+
 }

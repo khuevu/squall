@@ -58,7 +58,7 @@ public class StormDBToasterJoin extends StormBoltComponent {
 
     public StormDBToasterJoin(StormEmitter[] emitters,
                               ComponentProperties cp, List<String> allCompNames,
-                              Map<? extends StormEmitter, ValueExpression[]> emitterColRefs,
+                              Map<String, ValueExpression[]> emitterNameColRefs,
                               int hierarchyPosition, TopologyBuilder builder,
                               TopologyKiller killer, Config conf) {
         super(cp, allCompNames, hierarchyPosition, conf);
@@ -68,7 +68,7 @@ public class StormDBToasterJoin extends StormBoltComponent {
         _indexedColRefs = new HashMap<String, ValueExpression[]>();
         for (StormEmitter e : _emitters) {
             String emitterIndex = String.valueOf(allCompNames.indexOf(e.getName()));
-            ValueExpression[] colRefs = emitterColRefs.get(e);
+            ValueExpression[] colRefs = emitterNameColRefs.get(e.getName());
             _indexedColRefs.put(emitterIndex, colRefs);
         }
 

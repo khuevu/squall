@@ -674,28 +674,32 @@ public class ParserUtil {
 
     public static SQLVisitor parseQuery(Map map) {
 	final String sqlString = readSQL(map);
+        final String queryName = SystemParameters.getString(map,
+                "DIP_QUERY_NAME");
+        return parseQuery(queryName, sqlString);
+    }
 
-	final CCJSqlParserManager pm = new CCJSqlParserManager();
-	Statement statement = null;
-	try {
-	    statement = pm.parse(new StringReader(sqlString));
-	} catch (final JSQLParserException ex) {
-	    LOG.info("JSQLParserException");
-	}
+    public static SQLVisitor parseQuery(String queryName, String sqlString) {
+        final CCJSqlParserManager pm = new CCJSqlParserManager();
+        Statement statement = null;
+        try {
+            statement = pm.parse(new StringReader(sqlString));
+        } catch (final JSQLParserException ex) {
+            LOG.info("JSQLParserException");
+        }
 
-	if (statement instanceof Select) {
-	    final Select selectStatement = (Select) statement;
-	    final String queryName = SystemParameters.getString(map,
-		    "DIP_QUERY_NAME");
-	    final SQLVisitor parsedQuery = new SQLVisitor(queryName);
+        if (statement instanceof Select) {
+            final Select selectStatement = (Select) statement;
 
-	    // visit whole SELECT statement
-	    parsedQuery.visit(selectStatement);
-	    parsedQuery.doneVisiting();
+            final SQLVisitor parsedQuery = new SQLVisitor(queryName);
 
-	    return parsedQuery;
-	}
-	throw new RuntimeException("Please provide SELECT statement!");
+            // visit whole SELECT statement
+            parsedQuery.visit(selectStatement);
+            parsedQuery.doneVisiting();
+
+            return parsedQuery;
+        }
+        throw new RuntimeException("Please provide SELECT statement!");
     }
 
     // used after parallelismToMap method is invoked
