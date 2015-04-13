@@ -210,7 +210,6 @@ public class StormDBToasterJoin extends StormBoltComponent {
                     .getValueByField(StormComponent.TUPLE); // getValue(1);
 
             if (processFinalAck(tuple, stormTupleRcv)) {
-                System.out.println("Processing final ack");
                 // need to close db toaster app here
                 dbtoasterEngine.endStream();
                 return;

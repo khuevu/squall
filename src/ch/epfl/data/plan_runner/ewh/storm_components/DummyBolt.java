@@ -65,7 +65,7 @@ public class DummyBolt<JAT extends Number & Comparable<JAT>> extends
 
     private void processNonLastTuple(String inputComponentIndex,
 	    String sourceStreamId, List<String> tuple) {
-	// do nothing
+        LOG.info("Process tuple: " + Arrays.toString(tuple.toArray()));
     }
 
     private void finalizeProcessing() {

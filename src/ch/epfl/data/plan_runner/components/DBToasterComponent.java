@@ -3,8 +3,7 @@ package ch.epfl.data.plan_runner.components;
 
 import backtype.storm.Config;
 import backtype.storm.topology.TopologyBuilder;
-import ch.epfl.data.plan_runner.conversion.LongConversion;
-import ch.epfl.data.plan_runner.conversion.TypeConversion;
+import ch.epfl.data.plan_runner.conversion.*;
 import ch.epfl.data.plan_runner.expressions.ColumnReference;
 import ch.epfl.data.plan_runner.expressions.ValueExpression;
 import ch.epfl.data.plan_runner.operators.ChainOperator;
@@ -73,7 +72,7 @@ public class DBToasterComponent implements Component {
         private List<Component> _relations = new LinkedList<Component>();
         private Map<String, ValueExpression[]> _relColRefs = new HashMap<String, ValueExpression[]>();
         private String _sql;
-        private Pattern _sqlVarPattern = Pattern.compile("([A-Za-z0-9]+)\\.f([0-9]+)");
+        private Pattern _sqlVarPattern = Pattern.compile("([A-Za-z0-9_]+)\\.f([0-9]+)");
 
         public Builder addRelation(Component relation, ColumnReference... columnReferences) {
             _relations.add(relation);
@@ -134,6 +133,18 @@ public class DBToasterComponent implements Component {
             validateSelectItems(items);
         }
 
+        private String getSQLTypeFromTypeConversion(TypeConversion typeConversion) {
+            if (typeConversion instanceof LongConversion || typeConversion instanceof IntegerConversion) {
+                return "int";
+            } else if (typeConversion instanceof DoubleConversion) {
+                return "float";
+            } else if (typeConversion instanceof DateLongConversion) { // DBToaster code use Long for Date type.
+                return "date";
+            } else {
+                return "String";
+            }
+        }
+
         private String generateSchemaSQL() {
             StringBuilder schemas = new StringBuilder();
 
@@ -141,8 +152,7 @@ public class DBToasterComponent implements Component {
                 schemas.append("CREATE STREAM ").append(relName).append("(");
                 ValueExpression[] columnReferences = _relColRefs.get(relName);
                 for (int i = 0; i < columnReferences.length; i++) {
-                    String attr = "f" + i + " " + ((columnReferences[i].getType() instanceof LongConversion) ? "int" : "String");
-                    schemas.append(attr);
+                    schemas.append("f").append(i).append(" ").append(getSQLTypeFromTypeConversion(columnReferences[i].getType()));
                     if (i != columnReferences.length - 1) schemas.append(",");
                 }
                 schemas.append(") FROM FILE '' LINE DELIMITED csv;\n");
