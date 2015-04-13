@@ -1,6 +1,5 @@
 package ch.epfl.data.plan_runner.utilities;
 
-import ddbt.gen.*;
 import org.apache.log4j.Logger;
 import scala.collection.immutable.$colon$colon;
 import scala.collection.immutable.List;
