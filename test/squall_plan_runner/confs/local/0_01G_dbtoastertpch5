@@ -1,17 +1,21 @@
-DIP_DISTRIBUTED true
-DIP_QUERY_NAME dummy 
+DIP_DISTRIBUTED false
+DIP_QUERY_NAME dbtoaster_tpch5
 DIP_TOPOLOGY_NAME_PREFIX username
+DIP_NUM_ACKERS 0
 
-# the following two are optional, by default they use topology.workers and topology.ackers from storm.yaml
-# DIP_NUM_WORKERS 2
-# DIP_NUM_ACKERS 0
+DIP_DATA_PATH ../test/data/tpch/0.01G/
+DIP_RESULT_ROOT ../test/results/
 
-DIP_DATA_PATH /data/tpch/0.01G/
-
+REGION_PAR 1
+NATION_PAR 1
+SUPPLIER_PAR 1
+LINEITEM_PAR 1
 CUSTOMER_PAR 1
 ORDERS_PAR 1
 
-CUSTOMER_ORDERS_PAR 1
+REGION_NATION_SUPPLIER_LINEITEM_CUSTOMER_ORDERS_PAR 1
+
+DUMMY_PAR 1
 
 #below are unlikely to change
 DIP_EXTENSION .tbl
@@ -25,6 +29,6 @@ DIP_KILL_AT_THE_END true
 # Storage directory for local runs
 STORAGE_LOCAL_DIR /tmp/ramdisk
 # Storage directory for cluster runs
-STORAGE_CLUSTER_DIR /app/squall/storage
+STORAGE_CLUSTER_DIR /data/squall_zone/storage
 STORAGE_COLD_START true
 STORAGE_MEMORY_SIZE_MB 4096

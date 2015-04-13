@@ -1,25 +1,27 @@
-package ch.epfl.data.plan_runner.query_plans;
+package ch.epfl.data.plan_runner.query_plans.dbtoaster;
 
 
 import ch.epfl.data.plan_runner.components.Component;
 import ch.epfl.data.plan_runner.components.DBToasterComponent;
 import ch.epfl.data.plan_runner.conversion.LongConversion;
 import ch.epfl.data.plan_runner.conversion.StringConversion;
+import ch.epfl.data.plan_runner.ewh.components.DummyComponent;
 import ch.epfl.data.plan_runner.expressions.ColumnReference;
 import ch.epfl.data.plan_runner.operators.AggregateOperator;
 import ch.epfl.data.plan_runner.operators.DBToasterAggregateOperator;
 import ch.epfl.data.plan_runner.operators.ProjectOperator;
+import ch.epfl.data.plan_runner.query_plans.QueryBuilder;
 
 import java.util.Map;
 
-public class HyracksDBToasterPlan {
+public class DBToasterHyracksPlan {
 
     private final QueryBuilder _queryBuilder = new QueryBuilder();
     private static final LongConversion _lc = new LongConversion();
     private static final StringConversion _sc = new StringConversion();
 
 
-    public HyracksDBToasterPlan(Map conf) {
+    public DBToasterHyracksPlan(Map conf) {
         // -------------------------------------------------------------------------------------
         Component relationCustomer = _queryBuilder
                 .createDataSource("customer", conf)
@@ -39,10 +41,12 @@ public class HyracksDBToasterPlan {
         DBToasterComponent dbToasterComponent = builder.build();
 
         //column 1 in agg constructor is refer to the output tuple while column 1 in setGroupBy refer to the input after join
-        AggregateOperator agg = new DBToasterAggregateOperator<Long>(new ColumnReference<Long>(_lc, 1), conf);
-        dbToasterComponent.add(agg);
+        //AggregateOperator agg = new DBToasterAggregateOperator<Long>(new ColumnReference<Long>(_lc, 1), conf);
+        //dbToasterComponent.add(agg);
 
         _queryBuilder.add(dbToasterComponent);
+        DummyComponent dummy = new DummyComponent(dbToasterComponent, "DUMMY");
+        _queryBuilder.add(dummy);
         // -------------------------------------------------------------------------------------
     }
 

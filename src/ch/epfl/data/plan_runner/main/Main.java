@@ -11,6 +11,9 @@ import java.util.*;
 
 import ch.epfl.data.plan_runner.components.DBToasterComponent;
 import ch.epfl.data.plan_runner.query_plans.*;
+import ch.epfl.data.plan_runner.query_plans.dbtoaster.DBToasterHyracksPlan;
+import ch.epfl.data.plan_runner.query_plans.dbtoaster.DBToasterTPCH3Plan;
+import ch.epfl.data.plan_runner.query_plans.dbtoaster.DBToasterTPCH5Plan;
 import ch.epfl.data.plan_runner.utilities.*;
 import org.apache.log4j.Logger;
 
@@ -435,9 +438,15 @@ public class Main {
 	} else if (queryName.equalsIgnoreCase("theta_ewh_orders_scale")) {
 	    queryPlan = new ThetaEWHOrdersScaleJoin(dataPath, extension, conf)
 		    .getQueryPlan();
-	} else if (queryName.equalsIgnoreCase("dummy")) {
-        System.out.println("DUMMY query plan");
-        queryPlan = new HyracksDBToasterPlan(conf).getQueryBuilder();
+	} else if (queryName.equalsIgnoreCase("dbtoaster_hyracks")) {
+        queryPlan = new DBToasterHyracksPlan(conf)
+            .getQueryBuilder();
+    } else if (queryName.equalsIgnoreCase("dbtoaster_tpch3")) {
+        queryPlan = new DBToasterTPCH3Plan(dataPath, extension, conf)
+            .getQueryPlan();
+    } else if (queryName.equalsIgnoreCase("dbtoaster_tpch5")) {
+        queryPlan = new DBToasterTPCH5Plan(dataPath, extension, conf)
+                .getQueryPlan();
     }
 
 	// ... this line
