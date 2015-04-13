@@ -353,16 +353,35 @@ public class StormHyperCubeJoin extends StormBoltComponent {
         } else if (index == emitterIndexes.size() - 1) { // rightmost relation
             goLeft(index - 1, result, outputTuples);
         } else { // in the middle
+            List<List<String>> leftOutputTuples = new ArrayList<List<String>>();
+            goLeft(index - 1, result, leftOutputTuples);
+
+            List<List<String>> rightOutputTuples = new ArrayList<List<String>>();
+            goRight(index + 1, result, rightOutputTuples);
+
+            for (int i = 0; i < leftOutputTuples.size(); i++) {
+                for (int j = 0; j < rightOutputTuples.size(); j++) {
+                    List<String> leftPart = leftOutputTuples.get(i);
+                    List<String> rightPart = rightOutputTuples.get(j);
+
+                    // [A - B - C]  [C - D - E] so
+                    // we should remove one of the 'C'
+                    leftPart.remove(leftPart.size() - 1);
+
+                    leftPart.addAll(rightPart);
+
+                    outputTuples.add(leftPart);
+                }
+            }
 
         }
-
 
         long lineageTimestamp = 0;
         for (List<String> tpl : outputTuples) {
             applyOperatorsAndSend(stormTupleRcv, tpl,
                     lineageTimestamp, isLastInBatch);
         }
-        
+
       }
 
 
