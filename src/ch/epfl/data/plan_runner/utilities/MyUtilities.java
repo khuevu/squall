@@ -17,7 +17,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.HyperCubeAssignment;
-import ch.epfl.data.plan_runner.utilities.hypercube_statis.HyperCubeStaticMapping;
+import ch.epfl.data.plan_runner.utilities.hypercube_static.HyperCubeStaticMapping;
 import org.apache.log4j.Logger;
 
 import backtype.storm.Config;
@@ -410,22 +410,18 @@ public class MyUtilities {
 	return outputTuple;
     }
 
-    public static List<String> createOutputTupleForThere(List<String> firstTuple, List<String> secondTuple,
-                                                 List<String> thirdTuple) {
+    public static List<String> createOutputTuple(List<List<String>> tuples) {
         final List<String> outputTuple = new ArrayList<String>();
 
-        for (int j = 0; j < firstTuple.size(); j++)
-            // first relation (R)
-            outputTuple.add(firstTuple.get(j));
-        for (int j = 0; j < secondTuple.size(); j++)
-            outputTuple.add(secondTuple.get(j));
-
-        for (int j = 0; j < thirdTuple.size(); j++)
-            outputTuple.add(thirdTuple.get(j));
-
+        for (List<String> tpI : tuples) {
+            for (String coulumnJ : tpI) {
+                outputTuple.add(coulumnJ);
+            }
+        }
 
         return outputTuple;
     }
+
 
     public static List<String> createOutputTuple(List<String> firstTuple,
 	    List<String> secondTuple, List<Integer> joinParams) {

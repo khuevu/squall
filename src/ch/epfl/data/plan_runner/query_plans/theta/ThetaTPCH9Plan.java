@@ -99,11 +99,9 @@ public class ThetaTPCH9Plan {
 	ColumnReference colP_L2 = new ColumnReference(_ic, 2);
 	ColumnReference colPS1 = new ColumnReference(_ic, 0);
 	ColumnReference colPS2 = new ColumnReference(_ic, 1);
-	ComparisonPredicate P_L_PS1_comp = new ComparisonPredicate(
-		ComparisonPredicate.EQUAL_OP, colP_L1, colPS1);
+	ComparisonPredicate P_L_PS1_comp = new ComparisonPredicate(ComparisonPredicate.EQUAL_OP, colP_L1, colPS1);
 
-	ComparisonPredicate P_L_PS2_comp = new ComparisonPredicate(
-		ComparisonPredicate.EQUAL_OP, colP_L2, colPS2);
+	ComparisonPredicate P_L_PS2_comp = new ComparisonPredicate(ComparisonPredicate.EQUAL_OP, colP_L2, colPS2);
 	AndPredicate P_L_PS = new AndPredicate(P_L_PS1_comp, P_L_PS2_comp);
 
 	Component P_L_PSjoin = ThetaJoinComponentFactory

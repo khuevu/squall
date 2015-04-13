@@ -632,10 +632,8 @@ public class StormThetaJoin extends StormBoltComponent {
 		comeFromFirstEmitter, tuple);
 	_joinPredicate.accept(visitor);
 
-	final List<String> valuesToIndex = new ArrayList<String>(
-		visitor._valuesToIndex);
-	final List<Object> typesOfValuesToIndex = new ArrayList<Object>(
-		visitor._typesOfValuesToIndex);
+	final List<String> valuesToIndex = new ArrayList<String>(visitor._valuesToIndex);
+	final List<Object> typesOfValuesToIndex = new ArrayList<Object>(visitor._typesOfValuesToIndex);
 
 	for (int i = 0; i < affectedIndexes.size(); i++)
 	    if (typesOfValuesToIndex.get(i) instanceof Integer)

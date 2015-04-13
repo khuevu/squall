@@ -1,10 +1,9 @@
-package ch.epfl.data.plan_runner.utilities.hypercube_statis;
+package ch.epfl.data.plan_runner.utilities.hypercube_static;
 
 import backtype.storm.generated.GlobalStreamId;
 import backtype.storm.grouping.CustomStreamGrouping;
 import backtype.storm.task.WorkerTopologyContext;
 import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.HyperCubeAssignment;
-import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.MatrixAssignment;
 import ch.epfl.data.plan_runner.utilities.MyUtilities;
 import org.apache.log4j.Logger;
 
@@ -80,6 +79,10 @@ public class HyperCubeStaticMapping implements CustomStreamGrouping {
     }
 
     private List<Integer> translateIdsToTasks(List<Integer> ids) {
+
+        for (int i = 0; i < _targetTasks.size(); i++)
+            System.out.println(_targetTasks.get(i));
+
         final List<Integer> converted = new ArrayList<Integer>();
         for (final int id : ids)
             converted.add(_targetTasks.get(id));

@@ -1,11 +1,12 @@
 package ch.epfl.data.plan_runner.thetajoin.matrix_mapping;
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 /**
  * The cost model to compare two different partitioning results. In this case, we consider both computation cost and communication cost
  */
-class CombineCost implements Comparator<Assignment> {
+class CombineCost implements Comparator<Assignment>, Serializable {
 	
 	private CommCost c1 = new CommCost();
 	private CompCost c2 = new CompCost();
@@ -21,7 +22,7 @@ class CombineCost implements Comparator<Assignment> {
 /**
  * Computation cost: the number of joins each machine has to process
  */
-class CompCost implements Comparator<Assignment> {
+class CompCost implements Comparator<Assignment>, Serializable {
 	
 	private double computationCost(long[] sizes, int[] rd) {
 		double cost = 1;
@@ -41,7 +42,7 @@ class CompCost implements Comparator<Assignment> {
 /**
  * Communication cost: the number of tuples each machine receives
  */
-class CommCost implements Comparator<Assignment> {
+class CommCost implements Comparator<Assignment>, Serializable {
 	
 	private double communicationCost(long[] sizes, int[] rd) {
 		double cost = 0;
@@ -61,7 +62,7 @@ class CommCost implements Comparator<Assignment> {
 /**
  * A partitioning solution
  */
-class Assignment {
+class Assignment implements Serializable{
 	int[] rd;
 	long[] sizes;
 	public Assignment (long[] _sizes, int[] _rd){

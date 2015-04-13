@@ -8,7 +8,7 @@ import java.util.ArrayList;
  * Created by khayyam on 3/20/15.
  */
 public class HyperCubeJoinComponentFactory {
-    public static Component createThetaJoinOperator(ArrayList<Component> parents, QueryBuilder queryBuilder) {
+    public static Component createHyperCubeJoinOperator(ArrayList<Component> parents, QueryBuilder queryBuilder) {
         Component result = null;
         result = new HyperCubeJoinStaticComponent(parents);
         queryBuilder.add(result);

@@ -13,8 +13,10 @@ import ch.epfl.data.plan_runner.storm_components.InterchangingComponent;
 import ch.epfl.data.plan_runner.storm_components.StormBoltComponent;
 import ch.epfl.data.plan_runner.storm_components.StormComponent;
 import ch.epfl.data.plan_runner.storm_components.StormEmitter;
+import ch.epfl.data.plan_runner.storm_components.hyper_cube.NaiveJoiner;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
 import ch.epfl.data.plan_runner.storm_components.hyper_cube.StormHyperCubeJoin;
+import ch.epfl.data.plan_runner.storm_components.theta.StormThetaJoin;
 import ch.epfl.data.plan_runner.utilities.MyUtilities;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
@@ -155,8 +157,13 @@ public class HyperCubeJoinStaticComponent implements Component {
         ArrayList<StormEmitter> emitters = new ArrayList<StormEmitter>();
         for (StormEmitter se : parents)
             emitters.add(se);
-        joiner = new StormHyperCubeJoin(emitters, this, allCompNames, joinPredicate,
-                hierarchyPosition, builder, killer, conf, interComp, contentSensitiveThetaJoinWrapper);
+
+        joiner = new NaiveJoiner(emitters.get(0), emitters.get(1), this,
+                allCompNames, joinPredicate, false,
+                hierarchyPosition, builder, killer, conf, interComp,
+                false, contentSensitiveThetaJoinWrapper);
+        //joiner = new StormHyperCubeJoin(emitters, this, allCompNames, joinPredicate,
+        //        hierarchyPosition, builder, killer, conf, interComp, contentSensitiveThetaJoinWrapper);
 
     }
     @Override

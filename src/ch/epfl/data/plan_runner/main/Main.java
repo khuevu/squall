@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import ch.epfl.data.plan_runner.query_plans.hyper_cube.HyperCubeHyracksPlan;
 import org.apache.log4j.Logger;
 
 import backtype.storm.Config;
@@ -384,7 +385,10 @@ public class Main {
 	} else if (queryName.equalsIgnoreCase("theta_ewh_orders_scale")) {
 	    queryPlan = new ThetaEWHOrdersScaleJoin(dataPath, extension, conf)
 		    .getQueryPlan();
-	}
+	} else if (queryName.equalsIgnoreCase("huper_cube_hyracks")) {
+        queryPlan = new HyperCubeHyracksPlan(dataPath, extension, conf)
+                .getQueryPlan();
+    }
 
 	// ... this line
 
