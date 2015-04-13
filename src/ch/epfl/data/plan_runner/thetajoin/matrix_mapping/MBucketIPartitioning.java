@@ -104,7 +104,7 @@ public class MBucketIPartitioning {
 
     private ArrayList<Region> CoverRows(int row_s, int row_l, int maxInput,
 	    boolean[][] joinMatrix) {
-	ArrayList<Region> regions = new ArrayList<MBucketIPartitioning.Region>();
+	ArrayList<Region> regions = new ArrayList<Region>();
 	// Assuming everything is contigious
 	int col_s = getFirstSetColumn(row_s, joinMatrix);
 	Region r = new Region(row_s, row_l, col_s, maxInput, joinMatrix);

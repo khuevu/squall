@@ -14,6 +14,7 @@ import ch.epfl.data.plan_runner.query_plans.*;
 import ch.epfl.data.plan_runner.query_plans.dbtoaster.DBToasterHyracksPlan;
 import ch.epfl.data.plan_runner.query_plans.dbtoaster.DBToasterTPCH3Plan;
 import ch.epfl.data.plan_runner.query_plans.dbtoaster.DBToasterTPCH5Plan;
+import ch.epfl.data.plan_runner.query_plans.hyper_cube.HyperCubeHyracksPlan;
 import ch.epfl.data.plan_runner.utilities.*;
 import org.apache.log4j.Logger;
 
@@ -446,7 +447,10 @@ public class Main {
             .getQueryPlan();
     } else if (queryName.equalsIgnoreCase("dbtoaster_tpch5")) {
         queryPlan = new DBToasterTPCH5Plan(dataPath, extension, conf)
-                .getQueryPlan();
+            .getQueryPlan();
+	} else if (queryName.equalsIgnoreCase("huper_cube_hyracks")) {
+        queryPlan = new HyperCubeHyracksPlan(dataPath, extension, conf)
+            .getQueryPlan();
     }
 
 	// ... this line
