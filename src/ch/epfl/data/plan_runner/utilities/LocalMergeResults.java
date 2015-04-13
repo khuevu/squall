@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import ch.epfl.data.plan_runner.operators.AggregateUpdateOperator;
 import org.apache.log4j.Logger;
 
 import ch.epfl.data.plan_runner.conversion.TypeConversion;
@@ -55,6 +56,8 @@ public class LocalMergeResults {
 
 	if (lastAgg instanceof AggregateAvgOperator)
 	    overallAgg = new AggregateAvgOperator(cr, map);
+    else if (lastAgg instanceof AggregateUpdateOperator)
+        overallAgg = new AggregateUpdateOperator(cr, map);
 	else
 	    overallAgg = new AggregateSumOperator(cr, map);
 

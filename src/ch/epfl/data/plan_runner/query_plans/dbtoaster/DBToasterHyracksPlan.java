@@ -5,10 +5,9 @@ import ch.epfl.data.plan_runner.components.Component;
 import ch.epfl.data.plan_runner.components.DBToasterComponent;
 import ch.epfl.data.plan_runner.conversion.LongConversion;
 import ch.epfl.data.plan_runner.conversion.StringConversion;
-import ch.epfl.data.plan_runner.ewh.components.DummyComponent;
 import ch.epfl.data.plan_runner.expressions.ColumnReference;
 import ch.epfl.data.plan_runner.operators.AggregateOperator;
-import ch.epfl.data.plan_runner.operators.DBToasterAggregateOperator;
+import ch.epfl.data.plan_runner.operators.AggregateUpdateOperator;
 import ch.epfl.data.plan_runner.operators.ProjectOperator;
 import ch.epfl.data.plan_runner.query_plans.QueryBuilder;
 
@@ -40,13 +39,15 @@ public class DBToasterHyracksPlan {
 
         DBToasterComponent dbToasterComponent = builder.build();
 
-        //column 1 in agg constructor is refer to the output tuple while column 1 in setGroupBy refer to the input after join
-        //AggregateOperator agg = new DBToasterAggregateOperator<Long>(new ColumnReference<Long>(_lc, 1), conf);
-        //dbToasterComponent.add(agg);
-
+        AggregateOperator agg = new AggregateUpdateOperator(new ColumnReference(_lc, 1), conf).setGroupByColumns(0);
+        dbToasterComponent.add(agg);
         _queryBuilder.add(dbToasterComponent);
-        DummyComponent dummy = new DummyComponent(dbToasterComponent, "DUMMY");
-        _queryBuilder.add(dummy);
+
+//        final AggregateSumOperator agg = new AggregateSumOperator(
+//                new ColumnReference(_lc, 1), conf).setGroupByColumns(Arrays.asList(0));
+//        DummyComponent dummy = new DummyComponent(dbToasterComponent, "DUMMY");
+//        dummy.add(agg);
+//        _queryBuilder.add(dummy);
         // -------------------------------------------------------------------------------------
     }
 

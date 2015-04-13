@@ -3,9 +3,10 @@ package ch.epfl.data.plan_runner.query_plans.dbtoaster;
 import ch.epfl.data.plan_runner.components.DBToasterComponent;
 import ch.epfl.data.plan_runner.components.DataSourceComponent;
 import ch.epfl.data.plan_runner.conversion.*;
-import ch.epfl.data.plan_runner.ewh.components.DummyComponent;
 import ch.epfl.data.plan_runner.expressions.ColumnReference;
 import ch.epfl.data.plan_runner.expressions.ValueSpecification;
+import ch.epfl.data.plan_runner.operators.AggregateOperator;
+import ch.epfl.data.plan_runner.operators.AggregateUpdateOperator;
 import ch.epfl.data.plan_runner.operators.ProjectOperator;
 import ch.epfl.data.plan_runner.operators.SelectOperator;
 import ch.epfl.data.plan_runner.predicates.ComparisonPredicate;
@@ -106,11 +107,18 @@ public class DBToasterTPCH3Plan {
                 "GROUP BY LINEITEM.f0, ORDERS.f2, ORDERS.f3");
 
         DBToasterComponent dbToasterComponent = dbToasterCompBuilder.build();
+
+        AggregateOperator agg = new AggregateUpdateOperator(new ColumnReference(_doubleConv, 3), conf)
+                .setGroupByColumns(Arrays.asList(0, 1, 2));
+        dbToasterComponent.add(agg);
+
         _queryBuilder.add(dbToasterComponent);
 
+
+
         // Dummy component only print incoming tuples
-        DummyComponent dummyComponent = new DummyComponent(dbToasterComponent, "DUMMY");
-        _queryBuilder.add(dummyComponent);
+//        DummyComponent dummyComponent = new DummyComponent(dbToasterComponent, "DUMMY");
+//        _queryBuilder.add(dummyComponent);
 
 
     }

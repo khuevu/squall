@@ -3,11 +3,12 @@ package ch.epfl.data.plan_runner.query_plans.dbtoaster;
 import ch.epfl.data.plan_runner.components.DBToasterComponent;
 import ch.epfl.data.plan_runner.components.DataSourceComponent;
 import ch.epfl.data.plan_runner.conversion.*;
-import ch.epfl.data.plan_runner.ewh.components.DummyComponent;
 import ch.epfl.data.plan_runner.expressions.ColumnReference;
 import ch.epfl.data.plan_runner.expressions.DateSum;
 import ch.epfl.data.plan_runner.expressions.ValueExpression;
 import ch.epfl.data.plan_runner.expressions.ValueSpecification;
+import ch.epfl.data.plan_runner.operators.AggregateOperator;
+import ch.epfl.data.plan_runner.operators.AggregateUpdateOperator;
 import ch.epfl.data.plan_runner.operators.ProjectOperator;
 import ch.epfl.data.plan_runner.operators.SelectOperator;
 import ch.epfl.data.plan_runner.predicates.BetweenPredicate;
@@ -163,11 +164,14 @@ public class DBToasterTPCH5Plan {
                 "GROUP BY NATION.f1");
 
         DBToasterComponent dbtComp = dbtBuilder.build();
+
+        AggregateOperator agg = new AggregateUpdateOperator(new ColumnReference(_doubleConv, 1), conf).setGroupByColumns(0);
+        dbtComp.add(agg);
         _queryBuilder.add(dbtComp);
 
         // Dummy component only print incoming tuples
-        DummyComponent dummyComponent = new DummyComponent(dbtComp, "DUMMY");
-        _queryBuilder.add(dummyComponent);
+//        DummyComponent dummyComponent = new DummyComponent(dbtComp, "DUMMY");
+//        _queryBuilder.add(dummyComponent);
 
         // -------------------------------------------------------------------------------------
     }

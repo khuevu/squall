@@ -13,6 +13,8 @@ import ch.epfl.data.plan_runner.operators.AggregateOperator;
 import ch.epfl.data.plan_runner.operators.ChainOperator;
 import ch.epfl.data.plan_runner.operators.Operator;
 import ch.epfl.data.plan_runner.storm_components.synchronization.TopologyKiller;
+import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.HyperCubeAssignerFactory;
+import ch.epfl.data.plan_runner.thetajoin.matrix_mapping.HyperCubeAssignment;
 import ch.epfl.data.plan_runner.utilities.DBToasterEngine;
 import ch.epfl.data.plan_runner.utilities.MyUtilities;
 import ch.epfl.data.plan_runner.utilities.PeriodicAggBatchSend;
@@ -84,14 +86,18 @@ public class StormDBToasterJoin extends StormBoltComponent {
         final int parallelism = SystemParameters.getInt(getConf(), getID()
                 + "_PAR");
 
-        // connecting with previous level
+        // connecting with previous level using Hypercube Assignment
         InputDeclarer currentBolt = builder.setBolt(getID(), this, parallelism);
-        if (MyUtilities.isManualBatchingMode(getConf()))
-            currentBolt = MyUtilities.attachEmitterBatch(conf, _fullHashList,
-                    currentBolt, _emitters[0], Arrays.copyOfRange(_emitters, 1, _emitters.length));
-        else
-            currentBolt = MyUtilities.attachEmitterHash(conf, _fullHashList,
-                    currentBolt, _emitters[0], Arrays.copyOfRange(_emitters, 1, _emitters.length));
+        final HyperCubeAssignment _currentMappingAssignment;
+        long[] cardinality = new long[_emitters.length];
+        for (int i = 0; i < _emitters.length; i++) {
+            cardinality[i] = SystemParameters.getInt(conf, _emitters[i].getName() + "_CARD");
+        }
+        _currentMappingAssignment = new HyperCubeAssignerFactory().getAssigner(parallelism, cardinality);
+
+        currentBolt = MyUtilities.hyperCubeAttachEmitterComponents(currentBolt,
+                Arrays.asList(emitters), allCompNames,
+                _currentMappingAssignment, conf, null);
 
         // connecting with Killer
         if (getHierarchyPosition() == FINAL_COMPONENT
