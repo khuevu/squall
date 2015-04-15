@@ -80,8 +80,8 @@ public class HyperCubeStaticMapping implements CustomStreamGrouping {
 
     private List<Integer> translateIdsToTasks(List<Integer> ids) {
 
-        for (int i = 0; i < _targetTasks.size(); i++)
-            System.out.println(_targetTasks.get(i));
+//        for (int i = 0; i < _targetTasks.size(); i++)
+//            System.out.println(_targetTasks.get(i));
 
         final List<Integer> converted = new ArrayList<Integer>();
         for (final int id : ids)
