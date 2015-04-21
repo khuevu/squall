@@ -196,7 +196,8 @@ public class Main {
             for (DBToasterComponent dbtComp : dbToasterComponents) {
                 LOG.info("Generating DBToaster code for " + dbtComp.getName() + " Component");
                 //Don't have to unjar this file at the moment, because the generated classes are not packed in jar
-                DBToasterCompiler.compile(dbtComp.getSQLQuery(), dbtComp.getName(), extractedDir);
+                String genJarFile = DBToasterCompiler.compile(dbtComp.getSQLQuery(), dbtComp.getName());
+                JarUtilities.extractJarFile(genJarFile, extractedDir);
             }
 
             final boolean distributed = SystemParameters.getBoolean(conf,
