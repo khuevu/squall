@@ -241,6 +241,9 @@ public class StormDBToasterJoin extends StormBoltComponent {
                                      boolean isLastInBatch) {
 
         String sourceComponentName = stormTupleRcv.getSourceComponent();
+        if ((sourceComponentName.equals("LINEITEM") && tuple.get(0).equals("840")) || (sourceComponentName.equals("L_AVG") && tuple.get(1).equals("840")))
+            LOG.info(sourceComponentName + " " + Arrays.toString(tuple.toArray()));
+
         Type[] colTypes = _emitterNamesColTypes.get(sourceComponentName);
 
         boolean tupleWithMultiplicity = _emittersWithMultiplicity.contains(sourceComponentName);
